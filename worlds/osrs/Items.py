@@ -1,27 +1,46 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ItemSlot(Enum):
-    INVENTORY = 0
-    WEAPON = 1
-    SHIELD = 2
-    HEAD = 3
-    BODY = 4
-    LEGS = 5
-    BOOTS = 6
-    GLOVES = 7
-    BACK = 8
-    NECK = 9
-    RING = 10
-    AMMO = 11
-
-
-class ItemDefinition:
-    name: str
-    ap_id: int
-    rs_id: int
-    slot: ItemSlot
-    survival_score: int
-    melee_score: int
-    range_score: int
-    magic_score: int
+class ItemNames(StrEnum):
+    Lumbridge = "Area: Lumbridge"
+    Lumbridge_Swamp = "Area: Lumbridge Swamp"
+    Lumbridge_Farms = "Area: Lumbridge Farms"
+    Ham_Hideout = "Area: HAM Hideout"
+    Draynor_Village = "Area: Draynor Village"
+    Wizards_Tower = "Area: Wizard's Tower"
+    Al_Kharid = "Area: Al Kharid"
+    Cathraede_Abbey = "Area: Cathraede Abbey"
+    South_Varrock = "Area: South of Varrock"
+    Central_Varrock = "Area: Central Varrock"
+    Varrock_Palace = "Area: Varrock Palace"
+    East_Varrock = "Area: East of Varrock"
+    West_Varrock = "Area: West Varrock"
+    Edgeville = "Area: Edgeville"
+    Barbarian_Village = "Area: Barbarian Village"
+    Monastery = "Area: Monastery"
+    Ice_Mountain = "Area: Ice Mountain"
+    Dwarven_Mines = "Area: Dwarven Mines"
+    Falador = "Area: Falador"
+    Falador_Farm = "Area: Falador Farm"
+    Crafting_Guild = "Area: Crafting Guild"
+    Rimmington = "Area: Rimmington"
+    Port_Sarim = "Area: Port Sarim"
+    Mudskipper_Point = "Area: Mudskipper Point"
+    Karamja = "Area: Karamja"
+    Crandor = "Area: Crandor"
+    Corsair_Cove = "Area: Corsair Cove"
+    Wilderness = "Area: The Wilderness"
+    Progressive_Armor = "Progressive Armor"
+    Progressive_Weapons = "Progressive Weapons"
+    Progressive_Tools = "Progressive Tools"
+    Progressive_Range_Armor = "Progressive Range Armor"
+    Progressive_Range_Weapon = "Progressive Range Weapon"
+    Progressive_Magic = "Progressive Magic Spell"
+    Lobsters = "100 Lobsters"
+    Swordfish = "50 Swordfish"
+    Energy_Potions = "25 Energy Potions"
+    Coins = "50,000 Coins"
+    Mind_Runes = "500 Mind Runes"
+    Chaos_Runes = "250 Chaos Runes"
+    Death_Runes = "100 Death Runes"
+    Law_Runes = "50 Law Runes"
