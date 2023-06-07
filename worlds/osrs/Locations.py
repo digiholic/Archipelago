@@ -139,7 +139,6 @@ Misc_Locations = [
     LocationData(0x070035, LocationNames.Edgeville_Altar),
     LocationData(0x070036, LocationNames.K_Lesser_Demon),
     LocationData(0x070037, LocationNames.K_Ogress_Shaman),
-    LocationData(0x070038, LocationNames.K_Green_Dragon),
     LocationData(0x070039, LocationNames.K_Obor),
     LocationData(0x07003A, LocationNames.K_Bryo),
     LocationData(0x07003B, LocationNames.Prospect_Rune)

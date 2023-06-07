@@ -14,7 +14,7 @@ class RegionNames(StrEnum):
     Draynor_Manor = "Draynor Manor"
     Wizards_Tower = "Wizard's Tower"
     Al_Kharid = "Al Kharid"
-    Cathraed_Abbey = "Cathraed Abbey"
+    Citharede_Abbey = "Citharede Abbey"
     South_Of_Varrock = "South of Varrock"
     Central_Varrock = "Central Varrock"
     Varrock_Palace = "Varrock Palace"
@@ -122,12 +122,12 @@ all_regions = [
                [
                    RegionNames.Lumbridge,
                    RegionNames.South_Of_Varrock,
-                   RegionNames.Cathraed_Abbey
+                   RegionNames.Citharede_Abbey
                ],
                [
                    LocationNames.Q_Prince_Ali_Rescue
                ]),
-    RegionInfo(RegionNames.Cathraed_Abbey,
+    RegionInfo(RegionNames.Citharede_Abbey,
                ItemNames.Cathraede_Abbey,
                [
                    RegionNames.Al_Kharid
