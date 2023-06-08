@@ -29,8 +29,8 @@ class OSRSWorld(World):
 
     data_version = 1
 
-    item_name_to_id = {}
-    location_name_to_id = {}
+    item_name_to_id = {name: data.id for name, data in item_table.items()}
+    location_name_to_id = {loc_data.name: loc_data.id for loc_data in all_locations}
 
     def generate_early(self) -> None:
         # Set Starting Chunk

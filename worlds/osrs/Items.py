@@ -102,14 +102,14 @@ Gear_Items: typing.List[ItemData] = [
 ]
 
 Supply_Items: typing.List[ItemData] = [
-    ItemData(0x070023, ItemNames.Lobsters,       ItemClassification.filler),
-    ItemData(0x070024, ItemNames.Swordfish,      ItemClassification.filler),
-    ItemData(0x070025, ItemNames.Energy_Potions, ItemClassification.filler),
-    ItemData(0x070026, ItemNames.Coins,          ItemClassification.filler),
-    ItemData(0x070027, ItemNames.Mind_Runes,     ItemClassification.filler),
-    ItemData(0x070028, ItemNames.Chaos_Runes,    ItemClassification.filler),
-    ItemData(0x070029, ItemNames.Death_Runes,    ItemClassification.filler),
-    ItemData(0x07002A, ItemNames.Law_Runes,      ItemClassification.filler)
+    ItemData(0x070023, ItemNames.Lobsters,       ItemClassification.filler, 2),
+    ItemData(0x070024, ItemNames.Swordfish,      ItemClassification.filler, 2),
+    ItemData(0x070025, ItemNames.Energy_Potions, ItemClassification.filler, 2),
+    ItemData(0x070026, ItemNames.Coins,          ItemClassification.filler, 1),
+    ItemData(0x070027, ItemNames.Mind_Runes,     ItemClassification.filler, 2),
+    ItemData(0x070028, ItemNames.Chaos_Runes,    ItemClassification.filler, 2),
+    ItemData(0x070029, ItemNames.Death_Runes,    ItemClassification.filler, 2),
+    ItemData(0x07002A, ItemNames.Law_Runes,      ItemClassification.filler, 2)
 ]
 
 all_items: typing.List[ItemData] = Location_Items + Gear_Items + Supply_Items

@@ -149,7 +149,16 @@ Misc_Locations = [
     LocationData(0x070037, LocationNames.K_Ogress_Shaman),
     LocationData(0x070039, LocationNames.K_Obor),
     LocationData(0x07003A, LocationNames.K_Bryo),
-    LocationData(0x07003B, LocationNames.Prospect_Rune)
+    LocationData(0x07003B, LocationNames.Prospect_Rune),
+    LocationData(0x07003C, LocationNames.Total_XP_5000),
+    LocationData(0x07003D, LocationNames.Total_XP_25000),
+    LocationData(0x07003E, LocationNames.Total_XP_50000),
+    LocationData(0x07003F, LocationNames.Total_Level_50),
+    LocationData(0x070040, LocationNames.Total_Level_100),
+    LocationData(0x070041, LocationNames.Total_Level_200),
+    LocationData(0x070042, LocationNames.Combat_Level_10),
+    LocationData(0x070043, LocationNames.Combat_Level_25),
+    LocationData(0x070044, LocationNames.Combat_Level_50)
 ]
 
 Resource_Locations = [
