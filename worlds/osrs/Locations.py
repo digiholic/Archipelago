@@ -144,6 +144,20 @@ Misc_Locations = [
     LocationData(0x07003B, LocationNames.Prospect_Rune)
 ]
 
+Resource_Locations = [
+    # Sheep
+    # Spinning Wheel
+    # Wheat
+    # Mill
+    # Furnace
+    # Anvil
+    # Tin Rocks
+    # Copper Rocks
+    # Clay Rocks
+    # Iron Rocks
+    # Coal Rocks
+]
+
 all_locations: typing.List[LocationData] = Quest_Locations + Skill_Locations + Misc_Locations
 location_table: typing.Dict[str, int] = {locData.name: locData.id for locData in all_locations}
 location_data_table: typing.Dict[str, LocationData] = {locData.name: locData for locData in all_locations}

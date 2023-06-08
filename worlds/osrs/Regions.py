@@ -1,6 +1,7 @@
 import typing
 
 from enum import StrEnum
+from BaseClasses import CollectionState
 from .Locations import LocationNames
 from .Items import ItemNames
 
@@ -40,25 +41,31 @@ class RegionNames(StrEnum):
 class RegionInfo(typing.NamedTuple):
     name: str
     unlock: str
-    connections: typing.List[str]
     locations: typing.List[str]
+    exits: typing.Dict[str, str]
+    conditions: typing.Dict[str, typing.Callable[[CollectionState], bool]]
+    connections: typing.List[str]
+
 
 
 all_regions = [
     RegionInfo(RegionNames.Lumbridge,
                ItemNames.Lumbridge,
+[
+                   LocationNames.Q_Cooks_Assistant,
+                   LocationNames.Q_Rune_Mysteries,
+                   LocationNames.Q_Restless_Ghost,
+                   LocationNames.Q_X_Marks_the_Spot
+               ],
+               {},
+               {}
                [
                    RegionNames.Lumbridge_Swamp,
                    RegionNames.Lumbridge_Farms,
                    RegionNames.HAM_Hideout,
                    RegionNames.Al_Kharid
                ],
-               [
-                   LocationNames.Q_Cooks_Assistant,
-                   LocationNames.Q_Rune_Mysteries,
-                   LocationNames.Q_Restless_Ghost,
-                   LocationNames.Q_X_Marks_the_Spot
-               ]),
+               ),
     RegionInfo(RegionNames.Lumbridge_Swamp,
                ItemNames.Lumbridge_Swamp,
                [

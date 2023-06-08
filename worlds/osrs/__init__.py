@@ -53,7 +53,7 @@ class OSRSWorld(World):
             region = name_to_region[region_info.name]
             for connection in region_info.connections:
                 connection_region = name_to_region[connection]
-                entrance = Entrance(self.player, connection, region)
+                entrance = Entrance(self.player, f"{region_info.name}->{connection}", region)
                 entrance.connect(connection_region)
 
                 # And now, the special rules
@@ -82,7 +82,6 @@ class OSRSWorld(World):
                 else:
                     entrance.access_rule = lambda state: state.has(region_info.unlock, self.player)
 
-                # Thankfully, everything's bi-directional
                 region.exits.append(entrance)
 
     def create_items(self) -> None:
