@@ -72,11 +72,7 @@ class OSRSWorld(World):
             #TODO Change this for whatever your starting region is
             if item.itemName is not ItemNames.Lumbridge:
                 for i in range(item.count):
-                    # One of these progressive armors needs to be progression due to Black Knight's Fortress
-                    if i == 0 and item.itemName == ItemNames.Progressive_Armor:
-                        self.multiworld.itempool.append(self.create_item(item.itemName, ItemClassification.progression))
-                    else:
-                        self.multiworld.itempool.append(self.create_item(item.itemName))
+                    self.multiworld.itempool.append(self.create_item(item.itemName))
 
     def set_rules(self) -> None:
         """
@@ -298,19 +294,27 @@ class OSRSWorld(World):
                 state.can_reach(RegionNames.Karamja, None, self.player)
         )
 
-        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player).access_rule = lambda state: (
-            self.quest_points(state) >= 32 and state.can_reach(RegionNames.Crandor, None, self.player)
+        self.multiworld.get_location(LocationNames.K_Obor, self.player).access_rule = lambda state: (
+            state.has(ItemNames.Progressive_Armor, self.player, 5) and
+            state.has(ItemNames.Progressive_Weapons, self.player, 5)
         )
-        # place "Victory" at "Final Boss" and set collection as win condition
+        self.multiworld.get_location(LocationNames.K_Bryo, self.player).access_rule = lambda state: (
+                state.has(ItemNames.Progressive_Armor, self.player, 5) and
+                state.has(ItemNames.Progressive_Weapons, self.player, 5)
+        )
+
+        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player).access_rule = lambda state: (
+                self.quest_points(state) >= 32 and state.can_reach(RegionNames.Crandor, None, self.player)
+        )
+
+        # place "Victory" at "Dragon Slayer" and set collection as win condition
         self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
             .place_locked_item(self.create_event("Victory"))
         self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
 
-    def create_item(self, name: str, progression: ItemClassification = None) -> "Item":
+    def create_item(self, name: str) -> "Item":
         item = item_table[name]
-        if progression is None:
-            progression = item.progression
-        return OSRSItem(item.itemName, progression, item.id, self.player)
+        return OSRSItem(item.itemName, item.progression, item.id, self.player)
 
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events

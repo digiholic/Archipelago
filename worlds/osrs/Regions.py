@@ -322,9 +322,7 @@ all_regions = [
                })
                ),
     RegionInfo(RegionNames.South_Of_Varrock,
-               [
-                   LocationNames.Q_Dragon_Slayer
-               ],
+               [],
                {
                    f"{RegionNames.South_Of_Varrock}->{RegionNames.Al_Kharid}": RegionNames.Al_Kharid,
                    f"{RegionNames.South_Of_Varrock}->{RegionNames.Central_Varrock}": RegionNames.Central_Varrock,

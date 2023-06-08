@@ -93,8 +93,8 @@ Location_Items: typing.List[ItemData] = [
 ]
 
 Gear_Items: typing.List[ItemData] = [
-    ItemData(0x07001D, ItemNames.Progressive_Armor,        ItemClassification.useful, 6),  # one of these is progression
-    ItemData(0x07001E, ItemNames.Progressive_Weapons,      ItemClassification.useful, 6),
+    ItemData(0x07001D, ItemNames.Progressive_Armor,        ItemClassification.progression, 6),
+    ItemData(0x07001E, ItemNames.Progressive_Weapons,      ItemClassification.progression, 6),
     ItemData(0x07001F, ItemNames.Progressive_Tools,        ItemClassification.useful, 6),
     ItemData(0x070020, ItemNames.Progressive_Range_Armor,  ItemClassification.useful, 2),
     ItemData(0x070021, ItemNames.Progressive_Range_Weapon, ItemClassification.useful, 3),
