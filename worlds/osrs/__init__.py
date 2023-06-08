@@ -65,17 +65,18 @@ class OSRSWorld(World):
             else:
                 # FIXME These dictionaries are backwards but there's a ton of them pls fix
                 invertExits = dict((v, k) for k, v in region_info.exits.items())
-                invertConds = dict((v, k) for k, v in region_info.conditionGenerator(self.player).items())
-                region.add_exits(invertExits, invertConds)
+                region.add_exits(invertExits, region_info.conditionGenerator(self.player))
 
     def create_items(self) -> None:
         for item in all_items:
-            for i in range(item.count):
-                # One of these progressive armors needs to be progression due to Black Knight's Fortress
-                if i == 0 and item.itemName == ItemNames.Progressive_Armor:
-                    self.multiworld.itempool.append(self.create_item(item.itemName, ItemClassification.progression))
-                else:
-                    self.multiworld.itempool.append(self.create_item(item.itemName))
+            #TODO Change this for whatever your starting region is
+            if item.itemName is not ItemNames.Lumbridge:
+                for i in range(item.count):
+                    # One of these progressive armors needs to be progression due to Black Knight's Fortress
+                    if i == 0 and item.itemName == ItemNames.Progressive_Armor:
+                        self.multiworld.itempool.append(self.create_item(item.itemName, ItemClassification.progression))
+                    else:
+                        self.multiworld.itempool.append(self.create_item(item.itemName))
 
     def set_rules(self) -> None:
         """
@@ -319,5 +320,5 @@ class OSRSWorld(World):
         qp = 0
         for loc in all_locations:
             if loc.qp > 0 and self.multiworld.get_location(loc.name, self.player).can_reach(state):
-                qp = loc.qp
+                qp += loc.qp
         return qp

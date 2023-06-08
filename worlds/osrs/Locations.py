@@ -62,6 +62,15 @@ class LocationNames:
     Bake_Cake = "Bake a Cake"
     Bake_Meat_Pizza = "Bake a Meat Pizza"
     Prospect_Rune = "Prospect a Rune Rock"
+    Total_XP_5000 = "5,000 Total XP"
+    Total_XP_25000 = "25,000 Total XP"
+    Total_XP_50000 = "50,000 Total XP"
+    Total_Level_50 = "50 Total Level"
+    Total_Level_100 = "100 Total Level"
+    Total_Level_200 = "200 Total Level"
+    Combat_Level_10 = "Combat Level 10"
+    Combat_Level_25 = "Combat Level 25"
+    Combat_Level_50 = "Combat Level 50"
     Q_Dragon_Slayer = "Quest: Dragon Slayer"
 
 

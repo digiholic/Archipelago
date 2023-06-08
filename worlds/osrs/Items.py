@@ -39,14 +39,14 @@ class ItemNames:
     Progressive_Range_Armor = "Progressive Range Armor"
     Progressive_Range_Weapon = "Progressive Range Weapon"
     Progressive_Magic = "Progressive Magic Spell"
-    Lobsters = "100 Lobsters"
-    Swordfish = "50 Swordfish"
-    Energy_Potions = "25 Energy Potions"
-    Coins = "50,000 Coins"
-    Mind_Runes = "500 Mind Runes"
-    Chaos_Runes = "250 Chaos Runes"
-    Death_Runes = "100 Death Runes"
-    Law_Runes = "50 Law Runes"
+    Lobsters = "10 Lobsters"
+    Swordfish = "5 Swordfish"
+    Energy_Potions = "10 Energy Potions"
+    Coins = "5,000 Coins"
+    Mind_Runes = "50 Mind Runes"
+    Chaos_Runes = "25 Chaos Runes"
+    Death_Runes = "10 Death Runes"
+    Law_Runes = "10 Law Runes"
 
 
 class OSRSItem(Item):

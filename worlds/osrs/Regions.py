@@ -80,7 +80,16 @@ all_regions = [
                    LocationNames.Teleport_Falador,
                    LocationNames.Teleport_Lumbridge,
                    LocationNames.Bake_Cake,
-                   LocationNames.Bake_Meat_Pizza
+                   LocationNames.Bake_Meat_Pizza,
+                   LocationNames.Total_XP_5000,
+                   LocationNames.Total_XP_25000,
+                   LocationNames.Total_XP_50000,
+                   LocationNames.Total_Level_50,
+                   LocationNames.Total_Level_100,
+                   LocationNames.Total_Level_200,
+                   LocationNames.Combat_Level_10,
+                   LocationNames.Combat_Level_25,
+                   LocationNames.Combat_Level_50,
                ],
                {},
                lambda player: {}
@@ -101,17 +110,17 @@ all_regions = [
                    f"{RegionNames.Lumbridge}->{RegionNames.Imp}": RegionNames.Imp,
                },
                lambda player: ({
-                   f"{RegionNames.Lumbridge}->{RegionNames.Lumbridge_Swamp}":
+                   f"{RegionNames.Lumbridge_Swamp}":
                        lambda state: (state.has(ItemNames.Lumbridge_Swamp, player)),
-                   f"{RegionNames.Lumbridge}->{RegionNames.Lumbridge_Farms}":
+                   f"{RegionNames.Lumbridge_Farms}":
                        lambda state: (state.has(ItemNames.Lumbridge_Farms, player)),
-                   f"{RegionNames.Lumbridge}->{RegionNames.HAM_Hideout}":
+                   f"{RegionNames.HAM_Hideout}":
                        lambda state: (state.has(ItemNames.HAM_Hideout, player)),
-                   f"{RegionNames.Lumbridge}->{RegionNames.Al_Kharid}":
+                   f"{RegionNames.Al_Kharid}":
                        lambda state: (state.has(ItemNames.Al_Kharid, player)),
-                   f"{RegionNames.Lumbridge}->{RegionNames.Spinning_Wheel}":
+                   f"{RegionNames.Spinning_Wheel}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
                })
                ),
@@ -126,13 +135,13 @@ all_regions = [
                    f"{RegionNames.Lumbridge_Swamp}->{RegionNames.Coal_Rock}": RegionNames.Coal_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Lumbridge_Swamp}->{RegionNames.Lumbridge}":
+                   f"{RegionNames.Lumbridge}":
                        lambda state: (state.has(ItemNames.Lumbridge, player)),
-                   f"{RegionNames.Lumbridge_Swamp}->{RegionNames.HAM_Hideout}":
+                   f"{RegionNames.HAM_Hideout}":
                        lambda state: (state.has(ItemNames.HAM_Hideout, player)),
-                   f"{RegionNames.Lumbridge_Swamp}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Swamp}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True
                })
                ),
@@ -153,25 +162,25 @@ all_regions = [
                    f"{RegionNames.Lumbridge_Farms}->{RegionNames.Imp}": RegionNames.Imp,
                },
                lambda player: ({
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Lumbridge}":
+                   f"{RegionNames.Lumbridge}":
                        lambda state: (state.has(ItemNames.Lumbridge, player)),
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.HAM_Hideout}":
+                   f"{RegionNames.HAM_Hideout}":
                        lambda state: (state.has(ItemNames.HAM_Hideout, player)),
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Draynor_Village}":
+                   f"{RegionNames.Draynor_Village}":
                        lambda state: (state.has(ItemNames.Draynor_Village, player)),
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.South_Of_Varrock}":
+                   f"{RegionNames.South_Of_Varrock}":
                        lambda state: (state.has(ItemNames.South_Of_Varrock, player)),
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Egg}":
+                   f"{RegionNames.Egg}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Sheep}":
+                   f"{RegionNames.Sheep}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Milk}":
+                   f"{RegionNames.Milk}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Windmill}":
+                   f"{RegionNames.Windmill}":
                        lambda state: True,
-                   f"{RegionNames.Lumbridge_Farms}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
                })
                ),
@@ -184,13 +193,13 @@ all_regions = [
                    f"{RegionNames.HAM_Hideout}->{RegionNames.Draynor_Village}": RegionNames.Draynor_Village,
                },
                lambda player: ({
-                   f"{RegionNames.HAM_Hideout}->{RegionNames.Lumbridge}":
+                   f"{RegionNames.Lumbridge}":
                        lambda state: (state.has(ItemNames.Lumbridge, player)),
-                   f"{RegionNames.HAM_Hideout}->{RegionNames.Lumbridge_Swamp}":
+                   f"{RegionNames.Lumbridge_Swamp}":
                        lambda state: (state.has(ItemNames.Lumbridge_Swamp, player)),
-                   f"{RegionNames.HAM_Hideout}->{RegionNames.Lumbridge_Farms}":
+                   f"{RegionNames.Lumbridge_Farms}":
                        lambda state: (state.has(ItemNames.Lumbridge_Farms, player)),
-                   f"{RegionNames.HAM_Hideout}->{RegionNames.Draynor_Village}":
+                   f"{RegionNames.Draynor_Village}":
                        lambda state: (state.has(ItemNames.Draynor_Village, player)),
                })
                ),
@@ -209,21 +218,21 @@ all_regions = [
                    f"{RegionNames.Draynor_Village}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Lumbridge_Farms}":
+                   f"{RegionNames.Lumbridge_Farms}":
                        lambda state: (state.has(ItemNames.Lumbridge_Farms, player)),
-                   f"{RegionNames.Draynor_Village}->{RegionNames.HAM_Hideout}":
+                   f"{RegionNames.HAM_Hideout}":
                        lambda state: (state.has(ItemNames.HAM_Hideout, player)),
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Wizards_Tower}":
+                   f"{RegionNames.Wizards_Tower}":
                        lambda state: (state.has(ItemNames.Wizards_Tower, player)),
                    f"{RegionNames.Draynor_Village}->{RegionNames.Draynor_Manor}":
                        lambda state: (state.has(ItemNames.Draynor_Manor, player)),
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Falador_Farm}":
+                   f"{RegionNames.Falador_Farm}":
                        lambda state: (state.has(ItemNames.Falador_Farm, player)),
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Draynor_Village}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -236,9 +245,9 @@ all_regions = [
                    f"{RegionNames.Draynor_Manor}->{RegionNames.Barbarian_Village}": RegionNames.Barbarian_Village,
                },
                lambda player: ({
-                   f"{RegionNames.Draynor_Manor}->{RegionNames.Draynor_Village}":
+                   f"{RegionNames.Draynor_Village}":
                        lambda state: (state.has(ItemNames.Draynor_Village, player)),
-                   f"{RegionNames.Draynor_Manor}->{RegionNames.Barbarian_Village}":
+                   f"{RegionNames.Barbarian_Village}":
                        lambda state: (state.has(ItemNames.Barbarian_Village, player)),
                })
                ),
@@ -250,7 +259,7 @@ all_regions = [
                    f"{RegionNames.Wizards_Tower}->{RegionNames.Draynor_Village}": RegionNames.Draynor_Village,
                },
                lambda player: ({
-                   f"{RegionNames.Wizards_Tower}->{RegionNames.Draynor_Village}":
+                   f"{RegionNames.Draynor_Village}":
                        lambda state: (state.has(ItemNames.Draynor_Village, player)),
                })
                ),
@@ -271,25 +280,25 @@ all_regions = [
                    f"{RegionNames.Al_Kharid}->{RegionNames.Furnace}": RegionNames.Furnace,
                },
                lambda player: ({
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Lumbridge}":
+                   f"{RegionNames.Lumbridge}":
                        lambda state: (state.has(ItemNames.Lumbridge, player)),
-                   f"{RegionNames.Al_Kharid}->{RegionNames.South_Of_Varrock}":
+                   f"{RegionNames.South_Of_Varrock}":
                        lambda state: (state.has(ItemNames.South_Of_Varrock, player)),
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Citharede_Abbey}":
+                   f"{RegionNames.Citharede_Abbey}":
                        lambda state: (state.has(ItemNames.Citharede_Abbey, player)),
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Silver_Rock}":
+                   f"{RegionNames.Silver_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Al_Kharid}->{RegionNames.Furnace}":
+                   f"{RegionNames.Furnace}":
                        lambda state: True,
                })
                ),
@@ -302,13 +311,13 @@ all_regions = [
                    f"{RegionNames.Citharede_Abbey}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Citharede_Abbey}->{RegionNames.Al_Kharid}":
+                   f"{RegionNames.Al_Kharid}":
                        lambda state: (state.has(ItemNames.Al_Kharid, player)),
-                   f"{RegionNames.Citharede_Abbey}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Citharede_Abbey}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Citharede_Abbey}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True
                })
                ),
@@ -329,25 +338,25 @@ all_regions = [
                    f"{RegionNames.South_Of_Varrock}->{RegionNames.Silver_Rock}": RegionNames.Silver_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Al_Kharid}":
+                   f"{RegionNames.Al_Kharid}":
                        lambda state: (state.has(ItemNames.Al_Kharid, player)),
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Central_Varrock}":
+                   f"{RegionNames.Central_Varrock}":
                        lambda state: (state.has(ItemNames.Central_Varrock, player)),
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.East_Of_Varrock}":
+                   f"{RegionNames.East_Of_Varrock}":
                        lambda state: (state.has(ItemNames.East_Of_Varrock, player)),
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.West_Varrock}":
+                   f"{RegionNames.West_Varrock}":
                        lambda state: (state.has(ItemNames.West_Varrock, player)),
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Sheep}":
+                   f"{RegionNames.Sheep}":
                        lambda state: True,
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.South_Of_Varrock}->{RegionNames.Clay_Rock}":
+                   f"{RegionNames.Clay_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Iron_Rock}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Iron_Rock}->{RegionNames.Silver_Rock}":
+                   f"{RegionNames.Silver_Rock}":
                        lambda state: True,
                })
                ),
@@ -365,17 +374,17 @@ all_regions = [
                    f"{RegionNames.Central_Varrock}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Central_Varrock}->{RegionNames.South_Of_Varrock}":
+                   f"{RegionNames.South_Of_Varrock}":
                        lambda state: (state.has(ItemNames.South_Of_Varrock, player)),
-                   f"{RegionNames.Central_Varrock}->{RegionNames.East_Of_Varrock}":
+                   f"{RegionNames.East_Of_Varrock}":
                        lambda state: (state.has(ItemNames.East_Of_Varrock, player)),
-                   f"{RegionNames.Central_Varrock}->{RegionNames.West_Varrock}":
+                   f"{RegionNames.West_Varrock}":
                        lambda state: (state.has(ItemNames.West_Varrock, player)),
-                   f"{RegionNames.Central_Varrock}->{RegionNames.Varrock_Palace}":
+                   f"{RegionNames.Varrock_Palace}":
                        lambda state: (state.has(ItemNames.Varrock_Palace, player)),
-                   f"{RegionNames.Central_Varrock}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Central_Varrock}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -389,9 +398,9 @@ all_regions = [
                    f"{RegionNames.Varrock_Palace}->{RegionNames.Wilderness}": RegionNames.Wilderness,
                },
                lambda player: ({
-                   f"{RegionNames.Varrock_Palace}->{RegionNames.East_Of_Varrock}":
+                   f"{RegionNames.East_Of_Varrock}":
                        lambda state: (state.has(ItemNames.East_Of_Varrock, player)),
-                   f"{RegionNames.Varrock_Palace}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
                })
                ),
@@ -404,13 +413,13 @@ all_regions = [
                    f"{RegionNames.East_Of_Varrock}->{RegionNames.Wilderness}": RegionNames.Wilderness,
                },
                lambda player: ({
-                   f"{RegionNames.East_Of_Varrock}->{RegionNames.Central_Varrock}":
+                   f"{RegionNames.Central_Varrock}":
                        lambda state: (state.has(ItemNames.Central_Varrock, player)),
-                   f"{RegionNames.East_Of_Varrock}->{RegionNames.Varrock_Palace}":
+                   f"{RegionNames.Varrock_Palace}":
                        lambda state: (state.has(ItemNames.Varrock_Palace, player)),
-                   f"{RegionNames.East_Of_Varrock}->{RegionNames.South_Of_Varrock}":
+                   f"{RegionNames.South_Of_Varrock}":
                        lambda state: (state.has(ItemNames.South_Of_Varrock, player)),
-                   f"{RegionNames.East_Of_Varrock}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
                })
                ),
@@ -430,24 +439,24 @@ all_regions = [
                    f"{RegionNames.West_Varrock}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.West_Varrock}->{RegionNames.Central_Varrock}":
+                   f"{RegionNames.Central_Varrock}":
                        lambda state: (state.has(ItemNames.Central_Varrock, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Varrock_Palace}":
+                   f"{RegionNames.Varrock_Palace}":
                        lambda state: (state.has(ItemNames.Varrock_Palace, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Edgeville}":
+                   f"{RegionNames.Edgeville}":
                        lambda state: (state.has(ItemNames.Edgeville, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Barbarian_Village}":
+                   f"{RegionNames.Barbarian_Village}":
                        lambda state: (state.has(ItemNames.Barbarian_Village, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.South_Of_Varrock}":
+                   f"{RegionNames.South_Of_Varrock}":
                        lambda state: (state.has(ItemNames.South_Of_Varrock, player)),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.West_Varrock}->{RegionNames.Windmill}":
+                   f"{RegionNames.Windmill}":
                        lambda state: state.can_reach(RegionNames.East_Of_Varrock, None, player) or state.can_reach(
                            RegionNames.Imp, None, player),
-                   f"{RegionNames.West_Varrock}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -467,23 +476,23 @@ all_regions = [
                    f"{RegionNames.Edgeville}->{RegionNames.Furnace}": RegionNames.Furnace,
                },
                lambda player: ({
-                   f"{RegionNames.Edgeville}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
-                   f"{RegionNames.Edgeville}->{RegionNames.West_Varrock}":
+                   f"{RegionNames.West_Varrock}":
                        lambda state: (state.has(ItemNames.West_Varrock, player)),
-                   f"{RegionNames.Edgeville}->{RegionNames.Monastery}":
+                   f"{RegionNames.Monastery}":
                        lambda state: (state.has(ItemNames.Monastery, player)),
-                   f"{RegionNames.Edgeville}->{RegionNames.Barbarian_Village}":
+                   f"{RegionNames.Barbarian_Village}":
                        lambda state: (state.has(ItemNames.Barbarian_Village, player)),
-                   f"{RegionNames.Edgeville}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Edgeville}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.Edgeville}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Edgeville}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Edgeville}->{RegionNames.Furnace}":
+                   f"{RegionNames.Furnace}":
                        lambda state: True,
                })
                ),
@@ -501,19 +510,19 @@ all_regions = [
                    f"{RegionNames.Barbarian_Village}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Edgeville}":
+                   f"{RegionNames.Edgeville}":
                        lambda state: (state.has(ItemNames.Edgeville, player)),
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.West_Varrock}":
+                   f"{RegionNames.West_Varrock}":
                        lambda state: (state.has(ItemNames.West_Varrock, player)),
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Draynor_Manor}":
+                   f"{RegionNames.Draynor_Manor}":
                        lambda state: (state.has(ItemNames.Draynor_Manor, player)),
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Dwarven_Mines}":
+                   f"{RegionNames.Dwarven_Mines}":
                        lambda state: (state.has(ItemNames.Dwarven_Mines, player)),
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Spinning_Wheel}":
+                   f"{RegionNames.Spinning_Wheel}":
                        lambda state: True,
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Barbarian_Village}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -529,15 +538,15 @@ all_regions = [
                    f"{RegionNames.Monastery}->{RegionNames.Sheep}": RegionNames.Sheep,
                },
                lambda player: ({
-                   f"{RegionNames.Monastery}->{RegionNames.Edgeville}":
+                   f"{RegionNames.Edgeville}":
                        lambda state: (state.has(ItemNames.Edgeville, player)),
-                   f"{RegionNames.Monastery}->{RegionNames.Dwarven_Mines}":
+                   f"{RegionNames.Dwarven_Mines}":
                        lambda state: (state.has(ItemNames.Dwarven_Mines, player)),
-                   f"{RegionNames.Monastery}->{RegionNames.Ice_Mountain}":
+                   f"{RegionNames.Ice_Mountain}":
                        lambda state: (state.has(ItemNames.Ice_Mountain, player)),
-                   f"{RegionNames.Monastery}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
-                   f"{RegionNames.Monastery}->{RegionNames.Sheep}":
+                   f"{RegionNames.Sheep}":
                        lambda state: True,
                })
                ),
@@ -560,11 +569,11 @@ all_regions = [
                    f"{RegionNames.Ice_Mountain}->{RegionNames.Dwarven_Mines}": RegionNames.Dwarven_Mines,
                },
                lambda player: ({
-                   f"{RegionNames.Ice_Mountain}->{RegionNames.Wilderness}":
+                   f"{RegionNames.Wilderness}":
                        lambda state: (state.has(ItemNames.Wilderness, player)),
-                   f"{RegionNames.Ice_Mountain}->{RegionNames.Monastery}":
+                   f"{RegionNames.Monastery}":
                        lambda state: (state.has(ItemNames.Monastery, player)),
-                   f"{RegionNames.Ice_Mountain}->{RegionNames.Dwarven_Mines}":
+                   f"{RegionNames.Dwarven_Mines}":
                        lambda state: (state.has(ItemNames.Dwarven_Mines, player)),
                })
                ),
@@ -586,25 +595,25 @@ all_regions = [
                    f"{RegionNames.Dwarven_Mines}->{RegionNames.Gold_Rock}": RegionNames.Gold_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Barbarian_Village}":
+                   f"{RegionNames.Barbarian_Village}":
                        lambda state: (state.has(ItemNames.Barbarian_Village, player)),
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Monastery}":
+                   f"{RegionNames.Monastery}":
                        lambda state: (state.has(ItemNames.Monastery, player)),
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Ice_Mountain}":
+                   f"{RegionNames.Ice_Mountain}":
                        lambda state: (state.has(ItemNames.Ice_Mountain, player)),
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Falador}":
+                   f"{RegionNames.Falador}":
                        lambda state: (state.has(ItemNames.Falador, player)),
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Clay_Rock}":
+                   f"{RegionNames.Clay_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Dwarven_Mines}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: True,
                })
                ),
@@ -622,17 +631,17 @@ all_regions = [
                    f"{RegionNames.Falador}->{RegionNames.Furnace}": RegionNames.Furnace,
                },
                lambda player: ({
-                   f"{RegionNames.Falador}->{RegionNames.Dwarven_Mines}":
+                   f"{RegionNames.Dwarven_Mines}":
                        lambda state: (state.has(ItemNames.Dwarven_Mines, player)),
-                   f"{RegionNames.Falador}->{RegionNames.Falador_Farm}":
+                   f"{RegionNames.Falador_Farm}":
                        lambda state: (state.has(ItemNames.Falador_Farm, player)),
-                   f"{RegionNames.Falador}->{RegionNames.Spinning_Wheel}":
+                   f"{RegionNames.Spinning_Wheel}":
                        lambda state: True,
-                   f"{RegionNames.Falador}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Falador}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Falador}->{RegionNames.Furnace}":
+                   f"{RegionNames.Furnace}":
                        lambda state: True,
                })
                ),
@@ -650,19 +659,19 @@ all_regions = [
                    f"{RegionNames.Falador_Farm}->{RegionNames.Imp}": RegionNames.Imp,
                },
                lambda player: ({
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Crafting_Guild}":
+                   f"{RegionNames.Crafting_Guild}":
                        lambda state: (state.has(ItemNames.Crafting_Guild, player)),
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Draynor_Village}":
+                   f"{RegionNames.Draynor_Village}":
                        lambda state: (state.has(ItemNames.Draynor_Village, player)),
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Rimmington}":
+                   f"{RegionNames.Rimmington}":
                        lambda state: (state.has(ItemNames.Rimmington, player)),
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Port_Sarim}":
+                   f"{RegionNames.Port_Sarim}":
                        lambda state: (state.has(ItemNames.Port_Sarim, player)),
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Egg}":
+                   f"{RegionNames.Egg}":
                        lambda state: True,
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Milk}":
+                   f"{RegionNames.Milk}":
                        lambda state: True,
-                   f"{RegionNames.Falador_Farm}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
                })
                ),
@@ -679,25 +688,25 @@ all_regions = [
                    f"{RegionNames.Crafting_Guild}->{RegionNames.Gold_Rock}": RegionNames.Gold_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Falador_Farm}":
+                   f"{RegionNames.Falador_Farm}":
                        lambda state: (state.has(ItemNames.Falador_Farm, player)),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Rimmington}":
+                   f"{RegionNames.Rimmington}":
                        lambda state: (state.has(ItemNames.Rimmington, player)),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Sheep}":
+                   f"{RegionNames.Sheep}":
                        lambda state: True,
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Milk}":
+                   f"{RegionNames.Milk}":
                        lambda state: state.can_reach(RegionNames.West_Varrock, None, player) or state.can_reach(
                            RegionNames.Central_Varrock, None, player),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Spinning_Wheel}":
+                   f"{RegionNames.Spinning_Wheel}":
                        lambda state: state.can_reach(RegionNames.West_Varrock, None, player) or state.can_reach(
                            RegionNames.Central_Varrock, None, player),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Clay_Rock}":
+                   f"{RegionNames.Clay_Rock}":
                        lambda state: state.can_reach(RegionNames.West_Varrock, None, player) or state.can_reach(
                            RegionNames.Central_Varrock, None, player),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Silver_Rock}":
+                   f"{RegionNames.Silver_Rock}":
                        lambda state: state.can_reach(RegionNames.West_Varrock, None, player) or state.can_reach(
                            RegionNames.Central_Varrock, None, player),
-                   f"{RegionNames.Crafting_Guild}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: state.can_reach(RegionNames.West_Varrock, None, player) or state.can_reach(
                            RegionNames.Central_Varrock, None, player),
                })
@@ -720,27 +729,27 @@ all_regions = [
                    f"{RegionNames.Rimmington}->{RegionNames.Gold_Rock}": RegionNames.Gold_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Rimmington}->{RegionNames.Crafting_Guild}":
+                   f"{RegionNames.Crafting_Guild}":
                        lambda state: (state.has(ItemNames.Crafting_Guild, player)),
-                   f"{RegionNames.Rimmington}->{RegionNames.Falador_Farm}":
+                   f"{RegionNames.Falador_Farm}":
                        lambda state: (state.has(ItemNames.Falador_Farm, player)),
-                   f"{RegionNames.Rimmington}->{RegionNames.Port_Sarim}":
+                   f"{RegionNames.Port_Sarim}":
                        lambda state: (state.has(ItemNames.Port_Sarim, player)),
-                   f"{RegionNames.Rimmington}->{RegionNames.Mudskipper_Point}":
+                   f"{RegionNames.Mudskipper_Point}":
                        lambda state: (state.has(ItemNames.Mudskipper_Point, player)),
-                   f"{RegionNames.Rimmington}->{RegionNames.Corsair_Cove}":
+                   f"{RegionNames.Corsair_Cove}":
                        lambda state: (state.has(ItemNames.Corsair_Cove, player)),
-                   f"{RegionNames.Rimmington}->{RegionNames.Wheat}":
+                   f"{RegionNames.Wheat}":
                        lambda state: True,
-                   f"{RegionNames.Rimmington}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Rimmington}->{RegionNames.Bronze_Ores}":
+                   f"{RegionNames.Bronze_Ores}":
                        lambda state: True,
-                   f"{RegionNames.Rimmington}->{RegionNames.Clay_Rock}":
+                   f"{RegionNames.Clay_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Rimmington}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Rimmington}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: True,
                })
                ),
@@ -755,13 +764,13 @@ all_regions = [
                    f"{RegionNames.Port_Sarim}->{RegionNames.Crandor}": RegionNames.Crandor,
                },
                lambda player: ({
-                   f"{RegionNames.Port_Sarim}->{RegionNames.Falador_Farm}":
+                   f"{RegionNames.Falador_Farm}":
                        lambda state: (state.has(ItemNames.Falador_Farm, player)),
-                   f"{RegionNames.Port_Sarim}->{RegionNames.Rimmington}":
+                   f"{RegionNames.Rimmington}":
                        lambda state: (state.has(ItemNames.Rimmington, player)),
-                   f"{RegionNames.Port_Sarim}->{RegionNames.Mudskipper_Point}":
+                   f"{RegionNames.Mudskipper_Point}":
                        lambda state: (state.has(ItemNames.Mudskipper_Point, player)),
-                   f"{RegionNames.Port_Sarim}->{RegionNames.Port_Sarim}":
+                   f"{RegionNames.Port_Sarim}":
                        lambda state: (state.has(ItemNames.Crandor, player) and
                                       state.can_reach(RegionNames.South_Of_Varrock, None, player) and
                                       state.can_reach(RegionNames.Edgeville, None, player) and
@@ -785,14 +794,14 @@ all_regions = [
                    f"{RegionNames.Mudskipper_Point}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Mudskipper_Point}->{RegionNames.Port_Sarim}":
+                   f"{RegionNames.Port_Sarim}":
                        lambda state: (state.has(ItemNames.Port_Sarim, player)),
-                   f"{RegionNames.Mudskipper_Point}->{RegionNames.Rimmington}":
+                   f"{RegionNames.Rimmington}":
                        lambda state: (state.has(ItemNames.Rimmington, player)),
-                   f"{RegionNames.Mudskipper_Point}->{RegionNames.Karamja}":
+                   f"{RegionNames.Karamja}":
                        lambda state: (state.has(ItemNames.Karamja, player) and state.can_reach(RegionNames.Port_Sarim,
                                                                                                None, player)),
-                   f"{RegionNames.Mudskipper_Point}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -804,11 +813,11 @@ all_regions = [
                    f"{RegionNames.Karamja}->{RegionNames.Gold_Rock}": RegionNames.Gold_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Karamja}->{RegionNames.Mudskipper_Point}":
+                   f"{RegionNames.Mudskipper_Point}":
                        lambda state: (state.has(ItemNames.Mudskipper_Point, player)),
-                   f"{RegionNames.Karamja}->{RegionNames.Imp}":
+                   f"{RegionNames.Imp}":
                        lambda state: True,
-                   f"{RegionNames.Karamja}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: True,
                })
                ),
@@ -821,9 +830,9 @@ all_regions = [
                    f"{RegionNames.Corsair_Cove}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Corsair_Cove}->{RegionNames.Port_Sarim}":
+                   f"{RegionNames.Port_Sarim}":
                        lambda state: (state.has(ItemNames.Port_Sarim, player)),
-                   f"{RegionNames.Corsair_Cove}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -844,25 +853,25 @@ all_regions = [
                    f"{RegionNames.Wilderness}->{RegionNames.Anvil}": RegionNames.Anvil,
                },
                lambda player: ({
-                   f"{RegionNames.Wilderness}->{RegionNames.Ice_Mountain}":
+                   f"{RegionNames.Ice_Mountain}":
                        lambda state: (state.has(ItemNames.Ice_Mountain, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.Monastery}":
+                   f"{RegionNames.Monastery}":
                        lambda state: (state.has(ItemNames.Monastery, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.Edgeville}":
+                   f"{RegionNames.Edgeville}":
                        lambda state: (state.has(ItemNames.Edgeville, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.West_Varrock}":
+                   f"{RegionNames.West_Varrock}":
                        lambda state: (state.has(ItemNames.West_Varrock, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.Varrock_Palace}":
+                   f"{RegionNames.Varrock_Palace}":
                        lambda state: (state.has(ItemNames.Varrock_Palace, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.East_Of_Varrock}":
+                   f"{RegionNames.East_Of_Varrock}":
                        lambda state: (state.has(ItemNames.East_Of_Varrock, player)),
-                   f"{RegionNames.Wilderness}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Wilderness}->{RegionNames.Iron_Rock}":
+                   f"{RegionNames.Iron_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Wilderness}->{RegionNames.Furnace}":
+                   f"{RegionNames.Furnace}":
                        lambda state: True,
-                   f"{RegionNames.Wilderness}->{RegionNames.Anvil}":
+                   f"{RegionNames.Anvil}":
                        lambda state: True,
                })
                ),
@@ -877,11 +886,11 @@ all_regions = [
                    f"{RegionNames.Crandor}->{RegionNames.Gold_Rock}": RegionNames.Gold_Rock,
                },
                lambda player: ({
-                   f"{RegionNames.Crandor}->{RegionNames.Karamja}":
+                   f"{RegionNames.Karamja}":
                        lambda state: (state.has(ItemNames.Karamja, player)),
-                   f"{RegionNames.Crandor}->{RegionNames.Coal_Rock}":
+                   f"{RegionNames.Coal_Rock}":
                        lambda state: True,
-                   f"{RegionNames.Crandor}->{RegionNames.Gold_Rock}":
+                   f"{RegionNames.Gold_Rock}":
                        lambda state: True,
                })
                ),
