@@ -1,9 +1,8 @@
 import typing
 
-from enum import StrEnum
 from BaseClasses import Location
 
-class LocationNames(StrEnum):
+class LocationNames:
     Q_Cooks_Assistant = "Quest: Cook's Assistant"
     Q_Demon_Slayer = "Quest: Demon Slayer"
     Q_Restless_Ghost = "Quest: The Restless Ghost"
@@ -54,7 +53,6 @@ class LocationNames(StrEnum):
     Cut_Diamond = "Cut a Diamond"
     K_Lesser_Demon = "Kill a Lesser Demon"
     K_Ogress_Shaman = "Kill an Ogress Shaman"
-    K_Green_Dragon = "Kill a Green Dragon"
     K_Obor = "Kill Obor"
     K_Bryo = "Kill Bryophyta"
     Teleport_Varrock = "Teleport to Varrock"
@@ -65,6 +63,7 @@ class LocationNames(StrEnum):
     Bake_Meat_Pizza = "Bake a Meat Pizza"
     Prospect_Rune = "Prospect a Rune Rock"
     Q_Dragon_Slayer = "Quest: Dragon Slayer"
+
 
 class OSRSLocation(Location):
     game: str = "Old School Runescape"

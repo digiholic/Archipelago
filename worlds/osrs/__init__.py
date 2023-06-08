@@ -4,7 +4,7 @@ from worlds.AutoWorld import WebWorld, World
 
 from .Regions import RegionNames, all_regions
 from .Items import OSRSItem, ItemNames, all_items, item_table
-from .Locations import LocationNames
+from .Locations import LocationNames, OSRSLocation, all_locations
 from .Options import OSRSOptions
 
 
@@ -45,44 +45,28 @@ class OSRSWorld(World):
         # Gotta loop through once and make all the region objects
         for region_info in all_regions:
             region = Region(region_info.name, self.player, self.multiworld)
+            for location in region_info.locations:
+                loc = OSRSLocation(self.player, location, self.location_name_to_id.get(location, None), region)
+                region.locations.append(loc)
+
             name_to_region[region_info.name] = region
             self.multiworld.regions.append(region)
 
         # Now set up the entrances and exits
         for region_info in all_regions:
             region = name_to_region[region_info.name]
-            for connection in region_info.connections:
-                connection_region = name_to_region[connection]
-                entrance = Entrance(self.player, f"{region_info.name}->{connection}", region)
+            if region_info.name == "Menu":
+                # TODO Set exit to chosen starting location instead of hard-coding lumbridge
+                start_region = RegionNames.Lumbridge
+                connection_region = name_to_region[start_region]
+                entrance = Entrance(self.player, start_region, region)
                 entrance.connect(connection_region)
-
-                # And now, the special rules
-
-                # Karamja is adjacent to Mudskipper point but needs Port Sarim to sail there
-                if connection == RegionNames.Karamja:
-                    entrance.access_rule = lambda state: state.has(region_info.unlock, self.player) and \
-                                                         state.can_reach(RegionNames.Port_Sarim, self.player)
-                # You can only reach Crandor if you can reach all the places that are needed for the quest
-                elif connection == RegionNames.Crandor:
-                    entrance.access_rule = lambda state: state.has(region_info.unlock, self.player) and \
-                                                         state.can_reach(RegionNames.South_Of_Varrock, self.player) and \
-                                                         state.can_reach(RegionNames.Edgeville, self.player) and \
-                                                         state.can_reach(RegionNames.Lumbridge, self.player) and \
-                                                         state.can_reach(RegionNames.Rimmington, self.player) and \
-                                                         state.can_reach(RegionNames.Monastery, self.player) and \
-                                                         (state.can_reach(RegionNames.Dwarven_Mines,
-                                                                          self.player) or state.can_reach(
-                                                             RegionNames.Falador, self.player)) and \
-                                                         state.can_reach(RegionNames.Port_Sarim, self.player) and \
-                                                         state.can_reach(RegionNames.Draynor_Village, self.player)
-                elif connection == RegionNames.Crafting_Guild:
-                    entrance.access_rule = lambda state: state.has(region_info.unlock, self.player) and \
-                                                         (state.can_reach(RegionNames.Central_Varrock, self.player) or \
-                                                          (state.can_reach(RegionNames.East_Of_Varrock, self.player)))
-                else:
-                    entrance.access_rule = lambda state: state.has(region_info.unlock, self.player)
-
                 region.exits.append(entrance)
+            else:
+                # FIXME These dictionaries are backwards but there's a ton of them pls fix
+                invertExits = dict((v, k) for k, v in region_info.exits.items())
+                invertConds = dict((v, k) for k, v in region_info.conditionGenerator(self.player).items())
+                region.add_exits(invertExits, invertConds)
 
     def create_items(self) -> None:
         for item in all_items:
@@ -100,315 +84,226 @@ class OSRSWorld(World):
 
         # Quest locations
         self.multiworld.get_location(LocationNames.Q_Cooks_Assistant, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Lumbridge, self.player) and
+                state.can_reach(RegionNames.Lumbridge, None, self.player) and
                 # Eggs
-                (state.can_reach(RegionNames.Lumbridge_Farms, self.player) or state.can_reach(RegionNames.Falador_Farm,
-                                                                                              self.player)) and
-                # Wheat
-                (state.can_reach(RegionNames.Lumbridge_Farms, self.player) or
-                 (state.can_reach(RegionNames.West_Varrock, self.player) and state.can_reach(
-                     RegionNames.East_Of_Varrock, self.player)))
+                state.can_reach(RegionNames.Egg, None, self.player) and
+                state.can_reach(RegionNames.Wheat, None, self.player) and
+                state.can_reach(RegionNames.Windmill, None, self.player) and
+                state.can_reach(RegionNames.Milk, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Demon_Slayer, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Central_Varrock, self.player) and
-                state.can_reach(RegionNames.Varrock_Palace, self.player) and
-                state.can_reach(RegionNames.Wizards_Tower, self.player) and
-                state.can_reach(RegionNames.South_Of_Varrock, self.player)
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Varrock_Palace, None, self.player) and
+                state.can_reach(RegionNames.Wizards_Tower, None, self.player) and
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Restless_Ghost, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Lumbridge, self.player) and
-                state.can_reach(RegionNames.Lumbridge_Swamp, self.player) and
-                state.can_reach(RegionNames.Wizards_Tower, self.player)
+                state.can_reach(RegionNames.Lumbridge, None, self.player) and
+                state.can_reach(RegionNames.Lumbridge_Swamp, None, self.player) and
+                state.can_reach(RegionNames.Wizards_Tower, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Romeo_Juliet, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Central_Varrock, self.player) and
-                state.can_reach(RegionNames.Varrock_Palace, self.player) and
-                state.can_reach(RegionNames.South_Of_Varrock, self.player) and
-                state.can_reach(RegionNames.West_Varrock, self.player)
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Varrock_Palace, None, self.player) and
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player) and
+                state.can_reach(RegionNames.West_Varrock, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Sheep_Shearer, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Lumbridge_Farms, self.player) and
-                # f2p Spinning Wheels
-                (state.can_reach(RegionNames.Lumbridge, self.player) or
-                 state.can_reach(RegionNames.Falador,self.player) or
-                 state.can_reach(RegionNames.Crafting_Guild, self.player) or
-                 state.can_reach(RegionNames.Barbarian_Village, self.player))
+                state.can_reach(RegionNames.Lumbridge_Farms, None, self.player) and
+                state.can_reach(RegionNames.Spinning_Wheel, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Shield_of_Arrav, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Central_Varrock, self.player) and
-                state.can_reach(RegionNames.Varrock_Palace, self.player) and
-                state.can_reach(RegionNames.South_Of_Varrock, self.player) and
-                state.can_reach(RegionNames.West_Varrock, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Q_Ernest_the_Chicken, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Draynor_Manor, self.player)
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Varrock_Palace, None, self.player) and
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player) and
+                state.can_reach(RegionNames.West_Varrock, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Vampyre_Slayer, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Draynor_Village, self.player) and
-                state.can_reach(RegionNames.Central_Varrock, self.player) and
-                state.can_reach(RegionNames.Draynor_Manor, self.player)
+                state.can_reach(RegionNames.Draynor_Village, None, self.player) and
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Draynor_Manor, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Imp_Catcher, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Wizards_Tower, self.player) and
-                # imp spawns
-                (state.can_reach(RegionNames.Draynor_Village, self.player) or
-                 state.can_reach(RegionNames.Rimmington, self.player) or
-                 state.can_reach(RegionNames.Central_Varrock, self.player) or
-                 state.can_reach(RegionNames.Edgeville, self.player) or
-                 state.can_reach(RegionNames.Lumbridge, self.player) or
-                 state.can_reach(RegionNames.Lumbridge_Farms, self.player) or
-                 state.can_reach(RegionNames.Falador, self.player) or
-                 state.can_reach(RegionNames.Al_Kharid, self.player) or
-                 state.can_reach(RegionNames.Falador_Farm, self.player) or
-                 state.can_reach(RegionNames.Karamja, self.player)
-                 )
+                state.can_reach(RegionNames.Wizards_Tower, None, self.player) and
+                state.can_reach(RegionNames.Imp, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Prince_Ali_Rescue, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Al_Kharid, self.player) and
-            state.can_reach(RegionNames.Central_Varrock, self.player) and
-            # Bronze and clay
-            (state.can_reach(RegionNames.South_Of_Varrock, self.player) or
-             state.can_reach(RegionNames.Rimmington) or
-             state.can_reach(RegionNames.Dwarven_Mines) or
-             state.can_reach(RegionNames.Falador)
-             ) and
-            state.can_reach(RegionNames.Lumbridge_Farms, self.player) and
-            # Spinning Wheels
-            (state.can_reach(RegionNames.Lumbridge, self.player) or
-             state.can_reach(RegionNames.Falador, self.player) or
-             state.can_reach(RegionNames.Crafting_Guild, self.player) or
-             state.can_reach(RegionNames.Barbarian_Village, self.player)) and
-            state.can_reach(RegionNames.Draynor_Village, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Q_Dorics_Quest, self.player).access_rule = lambda state: (
-            # All mineables can be found in the Dwarven Mines, where this quest is. No fancy checks needed
-            state.can_reach(RegionNames.Dwarven_Mines, self.player)
+                state.can_reach(RegionNames.Al_Kharid, None, self.player) and
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Bronze_Ores, None, self.player) and
+                state.can_reach(RegionNames.Clay_Rock, None, self.player) and
+                state.can_reach(RegionNames.Sheep, None, self.player) and
+                state.can_reach(RegionNames.Spinning_Wheel, None, self.player) and
+                state.can_reach(RegionNames.Draynor_Village, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Black_Knights_Fortress, self.player).access_rule = lambda state: (
             # Non-Draynor Cabbage
-            (state.can_reach(RegionNames.Edgeville, self.player) or
-             state.can_reach(RegionNames.Falador_Farm, self.player)) and
-            state.has(ItemNames.Progressive_Armor, self.player) and
-            state.can_reach(RegionNames.Falador, self.player) and
-            state.can_reach(RegionNames.Monastery, self.player) and
-            state.can_reach(RegionNames.Ice_Mountain, self.player)
+                (state.can_reach(RegionNames.Edgeville, None, self.player) or
+                 state.can_reach(RegionNames.Falador_Farm, None, self.player)) and
+                state.has(ItemNames.Progressive_Armor, self.player) and
+                state.can_reach(RegionNames.Falador, None, self.player) and
+                state.can_reach(RegionNames.Monastery, None, self.player) and
+                state.can_reach(RegionNames.Ice_Mountain, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Witchs_Potion, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Rimmington, self.player) and
-            state.can_reach(RegionNames.Port_Sarim, self.player)
+                state.can_reach(RegionNames.Rimmington, None, self.player) and
+                state.can_reach(RegionNames.Port_Sarim, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Knights_Sword, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Falador, self.player) and
-            state.can_reach(RegionNames.Varrock_Palace, self.player) and
-            state.can_reach(RegionNames.Mudskipper_Point, self.player) and
-            state.can_reach(RegionNames.South_Of_Varrock, self.player) and
-            (state.can_reach(RegionNames.Lumbridge_Farms) or state.can_reach(RegionNames.West_Varrock))
+                state.can_reach(RegionNames.Falador, None, self.player) and
+                state.can_reach(RegionNames.Varrock_Palace, None, self.player) and
+                state.can_reach(RegionNames.Mudskipper_Point, None, self.player) and
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player) and
+                (state.can_reach(RegionNames.Lumbridge_Farms, None, self.player) or state.can_reach(
+                    RegionNames.West_Varrock, None, self.player))
         )
         self.multiworld.get_location(LocationNames.Q_Goblin_Diplomacy, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Ice_Mountain, self.player) and
-            state.can_reach(RegionNames.Draynor_Village, self.player) and
-            state.can_reach(RegionNames.Falador, self.player) and
-            state.can_reach(RegionNames.South_Of_Varrock, self.player) and
-            (state.can_reach(RegionNames.Lumbridge_Farms) or state.can_reach(RegionNames.Rimmington))
+                state.can_reach(RegionNames.Ice_Mountain, None, self.player) and
+                state.can_reach(RegionNames.Draynor_Village, None, self.player) and
+                state.can_reach(RegionNames.Falador, None, self.player) and
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player) and
+                (state.can_reach(RegionNames.Lumbridge_Farms, None, self.player) or state.can_reach(
+                    RegionNames.Rimmington, None, self.player))
         )
         self.multiworld.get_location(LocationNames.Q_Pirates_Treasure, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Port_Sarim, self.player) and
-            state.can_reach(RegionNames.Karamja, self.player) and
-            state.can_reach(RegionNames.Falador, self.player)
+                state.can_reach(RegionNames.Port_Sarim, None, self.player) and
+                state.can_reach(RegionNames.Karamja, None, self.player) and
+                state.can_reach(RegionNames.Falador, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Rune_Mysteries, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Lumbridge, self.player) and
-            state.can_reach(RegionNames.Wizards_Tower, self.player) and
-            state.can_reach(RegionNames.Central_Varrock, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Q_Misthalin_Mystery, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Lumbridge_Swamp, self.player)
+                state.can_reach(RegionNames.Lumbridge, None, self.player) and
+                state.can_reach(RegionNames.Wizards_Tower, None, self.player) and
+                state.can_reach(RegionNames.Central_Varrock, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Corsair_Curse, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Falador_Farm, self.player) and
-            state.can_reach(RegionNames.Corsair_Cove, self.player)
+                state.can_reach(RegionNames.Falador_Farm, None, self.player) and
+                state.can_reach(RegionNames.Corsair_Cove, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_X_Marks_the_Spot, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Lumbridge, self.player) and
-            state.can_reach(RegionNames.Draynor_Village, self.player) and
-            state.can_reach(RegionNames.Port_Sarim, self.player)
+                state.can_reach(RegionNames.Lumbridge, None, self.player) and
+                state.can_reach(RegionNames.Draynor_Village, None, self.player) and
+                state.can_reach(RegionNames.Port_Sarim, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Dwarven_Mines, self.player) and
-            state.can_reach(RegionNames.Ice_Mountain, self.player) and
-            state.can_reach(RegionNames.Barbarian_Village, self.player) and
-            state.can_reach(RegionNames.Falador, self.player) and
-            state.can_reach(RegionNames.Central_Varrock, self.player) and
-            state.can_reach(RegionNames.Edgeville, self.player)
+                state.can_reach(RegionNames.Dwarven_Mines, None, self.player) and
+                state.can_reach(RegionNames.Ice_Mountain, None, self.player) and
+                state.can_reach(RegionNames.Barbarian_Village, None, self.player) and
+                state.can_reach(RegionNames.Falador, None, self.player) and
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) and
+                state.can_reach(RegionNames.Edgeville, None, self.player)
         )
 
         self.multiworld.get_location(LocationNames.Simple_Lockbox, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Elaborate_Lockbox, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Ornate_Lockbox, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Guppy, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Cavefish, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Tetra, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Mind_Core, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Body_Core, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Barronite_Deposit, self.player).access_rule = lambda state: (
-                self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.Oak_Log, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Central_Varrock, self.player) or
-            state.can_reach(RegionNames.Draynor_Village, self.player) or
-            state.can_reach(RegionNames.Lumbridge, self.player) or
-            state.can_reach(RegionNames.Falador, self.player) or
-            state.can_reach(RegionNames.Falador_Farm, self.player) or
-            state.can_reach(RegionNames.Port_Sarim, self.player) or
-            state.can_reach(RegionNames.Varrock_Palace, self.player)
+                state.can_reach(RegionNames.Central_Varrock, None, self.player) or
+                state.can_reach(RegionNames.Draynor_Village, None, self.player) or
+                state.can_reach(RegionNames.Lumbridge, None, self.player) or
+                state.can_reach(RegionNames.Falador, None, self.player) or
+                state.can_reach(RegionNames.Falador_Farm, None, self.player) or
+                state.can_reach(RegionNames.Port_Sarim, None, self.player) or
+                state.can_reach(RegionNames.Varrock_Palace, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Willow_Log, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Crafting_Guild, self.player) or
-            state.can_reach(RegionNames.Rimmington, self.player) or
-            state.can_reach(RegionNames.Port_Sarim, self.player) or
-            state.can_reach(RegionNames.Edgeville, self.player) or
-            state.can_reach(RegionNames.Lumbridge, self.player) or
-            state.can_reach(RegionNames.South_Of_Varrock, self.player) or
-            state.can_reach(RegionNames.Draynor_Village, self.player) or
-            state.can_reach(RegionNames.Lumbridge_Farms, self.player)
+                state.can_reach(RegionNames.Crafting_Guild, None, self.player) or
+                state.can_reach(RegionNames.Rimmington, None, self.player) or
+                state.can_reach(RegionNames.Port_Sarim, None, self.player) or
+                state.can_reach(RegionNames.Edgeville, None, self.player) or
+                state.can_reach(RegionNames.Lumbridge, None, self.player) or
+                state.can_reach(RegionNames.South_Of_Varrock, None, self.player) or
+                state.can_reach(RegionNames.Draynor_Village, None, self.player) or
+                state.can_reach(RegionNames.Lumbridge_Farms, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Catch_Lobster, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Port_Sarim, self.player) and
-            (state.can_reach(RegionNames.Karamja, self.player) or state.can_reach(RegionNames.Corsair_Cove))
+                state.can_reach(RegionNames.Port_Sarim, None, self.player) and
+                (state.can_reach(RegionNames.Karamja, None, self.player) or state.can_reach(RegionNames.Corsair_Cove,
+                                                                                            None, self.player))
         )
         self.multiworld.get_location(LocationNames.Catch_Swordfish, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Port_Sarim, self.player) and
-                (state.can_reach(RegionNames.Karamja, self.player) or state.can_reach(RegionNames.Corsair_Cove))
+                state.can_reach(RegionNames.Port_Sarim, None, self.player) and
+                (state.can_reach(RegionNames.Karamja, None, self.player) or state.can_reach(RegionNames.Corsair_Cove,
+                                                                                            None, self.player))
         )
         self.multiworld.get_location(LocationNames.Holy_Symbol, self.player).access_rule = lambda state: (
             # Mould and Silver
-            (state.can_reach(RegionNames.Al_Kharid, self.player) or state.can_reach(RegionNames.Crafting_Guild, self.player)) and
-            # Sheep
-            (state.can_reach(RegionNames.Lumbridge_Farms, self.player) or
-             state.can_reach(RegionNames.South_Of_Varrock, self.player) or
-             state.can_reach(RegionNames.Crafting_Guild, self.player) or
-             state.can_reach(RegionNames.Monastery, self.player)) and
-            # Spinning Wheels
-            (state.can_reach(RegionNames.Lumbridge, self.player) or
-             state.can_reach(RegionNames.Falador, self.player) or
-             state.can_reach(RegionNames.Crafting_Guild, self.player) or
-             state.can_reach(RegionNames.Barbarian_Village, self.player)) and
-            state.can_reach(RegionNames.Monastery, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Mine_Silver, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Al_Kharid, self.player) or
-            state.can_reach(RegionNames.Crafting_Guild, self.player) or
-            state.can_reach(RegionNames.Edgeville, self.player) or
-            state.can_reach(RegionNames.South_Of_Varrock, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Mine_Coal, self.player).access_rule = lambda state: (
-                state.can_reach(RegionNames.Al_Kharid, self.player) or
-                state.can_reach(RegionNames.Wilderness, self.player) or
-                state.can_reach(RegionNames.Barbarian_Village, self.player) or
-                state.can_reach(RegionNames.Citharede_Abbey, self.player) or
-                state.can_reach(RegionNames.Dwarven_Mines, self.player) or
-                state.can_reach(RegionNames.Edgeville, self.player) or
-                state.can_reach(RegionNames.Falador, self.player) or
-                state.can_reach(RegionNames.Crandor, self.player) or
-                state.can_reach(RegionNames.Lumbridge_Swamp, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Mine_Gold, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Al_Kharid, self.player) or
-            state.can_reach(RegionNames.Crafting_Guild, self.player) or
-            state.can_reach(RegionNames.Dwarven_Mines, self.player) or
-            state.can_reach(RegionNames.Karamja, self.player) or
-            state.can_reach(RegionNames.Crandor, self.player) or
-            state.can_reach(RegionNames.Rimmington, self.player)
+                (state.can_reach(RegionNames.Al_Kharid, None, self.player) or state.can_reach(
+                    RegionNames.Crafting_Guild, None,
+                    self.player)) and
+                state.can_reach(RegionNames.Silver_Rock, None, self.player) and
+                state.can_reach(RegionNames.Sheep, None, self.player) and
+                state.can_reach(RegionNames.Spinning_Wheel, None, self.player) and
+                state.can_reach(RegionNames.Monastery, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Smelt_Silver, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Mine_Silver, self.player).can_reach(state) and
-            # Furnaces
-            (
-                state.can_reach(RegionNames.Edgeville, self.player) or
-                state.can_reach(RegionNames.Al_Kharid, self.player) or
-                state.can_reach(RegionNames.Falador, self.player) or
-                state.can_reach(RegionNames.Lumbridge, self.player) or
-                state.can_reach(RegionNames.Wilderness, self.player)
-            )
+                state.can_reach(RegionNames.Silver_Rock, None, self.player) and
+                state.can_reach(RegionNames.Furnace, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Smelt_Steel, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Mine_Coal, self.player).can_reach(state) and
-            # Furnaces
-            (
-                state.can_reach(RegionNames.Edgeville, self.player) or
-                state.can_reach(RegionNames.Al_Kharid, self.player) or
-                state.can_reach(RegionNames.Falador, self.player) or
-                state.can_reach(RegionNames.Lumbridge, self.player) or
-                state.can_reach(RegionNames.Wilderness, self.player)
-            )
+                state.can_reach(RegionNames.Coal_Rock, None, self.player) and
+                state.can_reach(RegionNames.Iron_Rock, None, self.player) and
+                state.can_reach(RegionNames.Furnace, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Smelt_Gold, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Mine_Gold, self.player).can_reach(state) and
-            # Furnaces
-            (
-                state.can_reach(RegionNames.Edgeville, self.player) or
-                state.can_reach(RegionNames.Al_Kharid, self.player) or
-                state.can_reach(RegionNames.Falador, self.player) or
-                state.can_reach(RegionNames.Lumbridge, self.player) or
-                state.can_reach(RegionNames.Wilderness, self.player)
-            )
+                state.can_reach(RegionNames.Gold_Rock, None, self.player) and
+                state.can_reach(RegionNames.Furnace, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Bake_Apple_Pie, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.West_Varrock, self.player) and
-            state.can_reach(RegionNames.Central_Varrock, self.player)
+                state.can_reach(RegionNames.Wheat, None, self.player) and
+                state.can_reach(RegionNames.Windmill, None, self.player) and
+                state.can_reach(RegionNames.West_Varrock, None, self.player) and
+                (state.can_reach(RegionNames.East_Of_Varrock, None, self.player) or state.can_reach(RegionNames.Imp,
+                                                                                                    None,
+                                                                                                    self.player))
         )
         self.multiworld.get_location(LocationNames.Bake_Cake, self.player).access_rule = lambda state: (
-            # Good enough for the duke, good enough for you
-            self.multiworld.get_location(LocationNames.Q_Cooks_Assistant, self.player)
+                state.can_reach(RegionNames.Wheat, None, self.player) and
+                state.can_reach(RegionNames.Egg, None, self.player) and
+                state.can_reach(RegionNames.Milk, None, self.player) and
+                state.can_reach(RegionNames.Windmill, None, self.player)
         )
         self.multiworld.get_location(LocationNames.Bake_Meat_Pizza, self.player).access_rule = lambda state: (
-            (state.can_reach(RegionNames.West_Varrock, self.player) and
-            state.can_reach(RegionNames.Central_Varrock, self.player)) or
-            state.can_reach(RegionNames.Lumbridge_Farms, self.player)
-        )
-
-        self.multiworld.get_location(LocationNames.Stronghold_Of_Security, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Barbarian_Village, self.player)
-        )
-
-        self.multiworld.get_location(LocationNames.Edgeville_Altar, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Monastery, self.player)
+                state.can_reach(RegionNames.Wheat, None, self.player) and
+                state.can_reach(RegionNames.Windmill, None, self.player)
         )
         self.multiworld.get_location(LocationNames.K_Lesser_Demon, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Wilderness, self.player) or
-            state.can_reach(RegionNames.Crandor, self.player) or
-            state.can_reach(RegionNames.Wizards_Tower, self.player) or
-            state.can_reach(RegionNames.Karamja, self.player)
-        )
-        self.multiworld.get_location(LocationNames.K_Ogress_Shaman, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Corsair_Cove, self.player)
+                state.can_reach(RegionNames.Wilderness, None, self.player) or
+                state.can_reach(RegionNames.Crandor, None, self.player) or
+                state.can_reach(RegionNames.Wizards_Tower, None, self.player) or
+                state.can_reach(RegionNames.Karamja, None, self.player)
         )
 
-        self.multiworld.get_location(LocationNames.K_Obor, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Edgeville, self.player)
+        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player).access_rule = lambda state: (
+            self.quest_points(state) >= 32 and state.can_reach(RegionNames.Crandor, None, self.player)
         )
-        self.multiworld.get_location(LocationNames.K_Bryo, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Varrock_Palace, self.player)
-        )
-        self.multiworld.get_location(LocationNames.Prospect_Rune, self.player).access_rule = lambda state: (
-            state.can_reach(RegionNames.Wilderness, self.player)
-        )
+        # place "Victory" at "Final Boss" and set collection as win condition
+        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
+            .place_locked_item(self.create_event("Victory"))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
 
     def create_item(self, name: str, progression: ItemClassification = None) -> "Item":
         item = item_table[name]
@@ -419,3 +314,10 @@ class OSRSWorld(World):
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
         return OSRSItem(event, ItemClassification.progression, None, self.player)
+
+    def quest_points(self, state):
+        qp = 0
+        for loc in all_locations:
+            if loc.qp > 0 and self.multiworld.get_location(loc.name, self.player).can_reach(state):
+                qp = loc.qp
+        return qp

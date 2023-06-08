@@ -1,22 +1,22 @@
 import typing
-from enum import StrEnum
+
 from BaseClasses import Item, ItemClassification
 
 
-class ItemNames(StrEnum):
+class ItemNames:
     Lumbridge = "Area: Lumbridge"
     Lumbridge_Swamp = "Area: Lumbridge Swamp"
     Lumbridge_Farms = "Area: Lumbridge Farms"
-    Ham_Hideout = "Area: HAM Hideout"
+    HAM_Hideout = "Area: HAM Hideout"
     Draynor_Village = "Area: Draynor Village"
     Draynor_Manor = "Area: Draynor Manor"
     Wizards_Tower = "Area: Wizard's Tower"
     Al_Kharid = "Area: Al Kharid"
-    Cathraede_Abbey = "Area: Cathraede Abbey"
-    South_Varrock = "Area: South of Varrock"
+    Citharede_Abbey = "Area: Cathraede Abbey"
+    South_Of_Varrock = "Area: South of Varrock"
     Central_Varrock = "Area: Central Varrock"
     Varrock_Palace = "Area: Varrock Palace"
-    East_Varrock = "Area: East of Varrock"
+    East_Of_Varrock = "Area: East of Varrock"
     West_Varrock = "Area: West Varrock"
     Edgeville = "Area: Edgeville"
     Barbarian_Village = "Area: Barbarian Village"
@@ -64,16 +64,16 @@ Location_Items: typing.List[ItemData] = [
     ItemData(0x070000, ItemNames.Lumbridge,         ItemClassification.progression_skip_balancing),
     ItemData(0x070001, ItemNames.Lumbridge_Swamp,   ItemClassification.progression_skip_balancing),
     ItemData(0x070002, ItemNames.Lumbridge_Farms,   ItemClassification.progression_skip_balancing),
-    ItemData(0x070003, ItemNames.Ham_Hideout,       ItemClassification.progression_skip_balancing),
+    ItemData(0x070003, ItemNames.HAM_Hideout, ItemClassification.progression_skip_balancing),
     ItemData(0x070004, ItemNames.Draynor_Village,   ItemClassification.progression_skip_balancing),
     ItemData(0x070005, ItemNames.Draynor_Manor,     ItemClassification.progression_skip_balancing),
     ItemData(0x070006, ItemNames.Wizards_Tower,     ItemClassification.progression_skip_balancing),
     ItemData(0x070007, ItemNames.Al_Kharid,         ItemClassification.progression_skip_balancing),
-    ItemData(0x070008, ItemNames.Cathraede_Abbey,   ItemClassification.progression_skip_balancing),
-    ItemData(0x070009, ItemNames.South_Varrock,     ItemClassification.progression_skip_balancing),
+    ItemData(0x070008, ItemNames.Citharede_Abbey, ItemClassification.progression_skip_balancing),
+    ItemData(0x070009, ItemNames.South_Of_Varrock, ItemClassification.progression_skip_balancing),
     ItemData(0x07000A, ItemNames.Central_Varrock,   ItemClassification.progression_skip_balancing),
     ItemData(0x07000B, ItemNames.Varrock_Palace,    ItemClassification.progression_skip_balancing),
-    ItemData(0x07000C, ItemNames.East_Varrock,      ItemClassification.progression_skip_balancing),
+    ItemData(0x07000C, ItemNames.East_Of_Varrock, ItemClassification.progression_skip_balancing),
     ItemData(0x07000D, ItemNames.West_Varrock,      ItemClassification.progression_skip_balancing),
     ItemData(0x07000E, ItemNames.Edgeville,         ItemClassification.progression_skip_balancing),
     ItemData(0x07000F, ItemNames.Barbarian_Village, ItemClassification.progression_skip_balancing),
