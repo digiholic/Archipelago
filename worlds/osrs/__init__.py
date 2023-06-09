@@ -25,7 +25,7 @@ class OSRSWeb(WebWorld):
 class OSRSWorld(World):
     game = "Old School Runescape"
     option_definitions = OSRSOptions
-    topology_present = False
+    topology_present = True
 
     data_version = 1
 
@@ -78,6 +78,45 @@ class OSRSWorld(World):
         """
         called to set access and item rules on locations and entrances.
         """
+        # Place QP events
+        self.multiworld.get_location(LocationNames.QP_Cooks_Assistant, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Cooks_Assistant))
+        self.multiworld.get_location(LocationNames.QP_Demon_Slayer, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Demon_Slayer))
+        self.multiworld.get_location(LocationNames.QP_Restless_Ghost, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Restless_Ghost))
+        self.multiworld.get_location(LocationNames.QP_Romeo_Juliet, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Romeo_Juliet))
+        self.multiworld.get_location(LocationNames.QP_Sheep_Shearer, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Sheep_Shearer))
+        self.multiworld.get_location(LocationNames.QP_Shield_of_Arrav, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Shield_of_Arrav))
+        self.multiworld.get_location(LocationNames.QP_Ernest_the_Chicken, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Ernest_the_Chicken))
+        self.multiworld.get_location(LocationNames.QP_Vampyre_Slayer, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Vampyre_Slayer))
+        self.multiworld.get_location(LocationNames.QP_Imp_Catcher, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Imp_Catcher))
+        self.multiworld.get_location(LocationNames.QP_Prince_Ali_Rescue, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Prince_Ali_Rescue))
+        self.multiworld.get_location(LocationNames.QP_Dorics_Quest, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Dorics_Quest))
+        self.multiworld.get_location(LocationNames.QP_Black_Knights_Fortress, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Black_Knights_Fortress))
+        self.multiworld.get_location(LocationNames.QP_Witchs_Potion, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Witchs_Potion))
+        self.multiworld.get_location(LocationNames.QP_Knights_Sword, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Knights_Sword))
+        self.multiworld.get_location(LocationNames.QP_Goblin_Diplomacy, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Goblin_Diplomacy))
+        self.multiworld.get_location(LocationNames.QP_Pirates_Treasure, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Pirates_Treasure))
+        self.multiworld.get_location(LocationNames.QP_Rune_Mysteries, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Rune_Mysteries))
+        self.multiworld.get_location(LocationNames.QP_Misthalin_Mystery, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Misthalin_Mystery)),
+        self.multiworld.get_location(LocationNames.QP_Corsair_Curse, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Corsair_Curse))
 
         # Quest locations
         self.multiworld.get_location(LocationNames.Q_Cooks_Assistant, self.player).access_rule = lambda state: (
@@ -190,32 +229,95 @@ class OSRSWorld(World):
                 state.can_reach(RegionNames.Edgeville, None, self.player)
         )
 
-        self.multiworld.get_location(LocationNames.Simple_Lockbox, self.player).access_rule = lambda state: (
+        # QP Locations
+        self.multiworld.get_location(LocationNames.QP_Cooks_Assistant, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Cooks_Assistant, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Demon_Slayer, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Demon_Slayer, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Restless_Ghost, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Restless_Ghost, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Romeo_Juliet, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Romeo_Juliet, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Sheep_Shearer, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Sheep_Shearer, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Shield_of_Arrav, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Shield_of_Arrav, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Ernest_the_Chicken, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Ernest_the_Chicken, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Vampyre_Slayer, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Vampyre_Slayer, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Imp_Catcher, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Imp_Catcher, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Prince_Ali_Rescue, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Prince_Ali_Rescue, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Dorics_Quest, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Dorics_Quest, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Black_Knights_Fortress, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Black_Knights_Fortress, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Witchs_Potion, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Witchs_Potion, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Knights_Sword, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Knights_Sword, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Goblin_Diplomacy, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Goblin_Diplomacy, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Pirates_Treasure, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Pirates_Treasure, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Rune_Mysteries, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Rune_Mysteries, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Misthalin_Mystery, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Misthalin_Mystery, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Corsair_Curse, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_Corsair_Curse, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_Below_Ice_Mountain, self.player).access_rule = lambda state: (
             self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+        )
+
+        # Other locations
+        self.multiworld.get_location(LocationNames.Simple_Lockbox, self.player).access_rule = lambda state: (
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Elaborate_Lockbox, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Ornate_Lockbox, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Guppy, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Cavefish, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Tetra, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Mind_Core, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player) and state.has(ItemNames.QP_Rune_Mysteries, self.player)
         )
         self.multiworld.get_location(LocationNames.Body_Core, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player) and state.has(ItemNames.QP_Rune_Mysteries, self.player)
         )
         self.multiworld.get_location(LocationNames.Barronite_Deposit, self.player).access_rule = lambda state: (
-            self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)
+            state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
         self.multiworld.get_location(LocationNames.Oak_Log, self.player).access_rule = lambda state: (
                 state.can_reach(RegionNames.Central_Varrock, None, self.player) or
@@ -307,6 +409,7 @@ class OSRSWorld(World):
                 self.quest_points(state) >= 32 and state.can_reach(RegionNames.Crandor, None, self.player)
         )
 
+
         # place "Victory" at "Dragon Slayer" and set collection as win condition
         self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
             .place_locked_item(self.create_event("Victory"))
@@ -322,7 +425,7 @@ class OSRSWorld(World):
 
     def quest_points(self, state):
         qp = 0
-        for loc in all_locations:
-            if loc.qp > 0 and self.multiworld.get_location(loc.name, self.player).can_reach(state):
-                qp += loc.qp
+        for qp_event in Items.QP_Items:
+            if state.has(qp_event, self.player):
+                qp += int(qp_event[0])
         return qp

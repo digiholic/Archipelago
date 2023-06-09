@@ -24,6 +24,27 @@ class LocationNames:
     Q_Corsair_Curse = "Quest: The Corsair Curse"
     Q_X_Marks_the_Spot = "Quest: X Marks the Spot"
     Q_Below_Ice_Mountain = "Quest: Below Ice Mountain"
+    QP_Cooks_Assistant = "Points: Cook's Assistant"
+    QP_Demon_Slayer = "Points: Demon Slayer"
+    QP_Restless_Ghost = "Points: The Restless Ghost"
+    QP_Romeo_Juliet = "Points: Romeo & Juliet"
+    QP_Sheep_Shearer = "Points: Sheep Shearer"
+    QP_Shield_of_Arrav = "Points: Shield of Arrav"
+    QP_Ernest_the_Chicken = "Points: Ernest the Chicken"
+    QP_Vampyre_Slayer = "Points: Vampyre Slayer"
+    QP_Imp_Catcher = "Points: Imp Catcher"
+    QP_Prince_Ali_Rescue = "Points: Prince Ali Rescue"
+    QP_Dorics_Quest = "Points: Doric's Quest"
+    QP_Black_Knights_Fortress = "Points: Black Knights' Fortress"
+    QP_Witchs_Potion = "Points: Witch's Potion"
+    QP_Knights_Sword = "Points: The Knight's Sword"
+    QP_Goblin_Diplomacy = "Points: Goblin Diplomacy"
+    QP_Pirates_Treasure = "Points: Pirate's Treasure"
+    QP_Rune_Mysteries = "Points: Rune Mysteries"
+    QP_Misthalin_Mystery = "Points: Misthalin Mystery"
+    QP_Corsair_Curse = "Points: The Corsair Curse"
+    QP_X_Marks_the_Spot = "Points: X Marks the Spot"
+    QP_Below_Ice_Mountain = "Points: Below Ice Mountain"
     Stronghold_Of_Security = "Stronghold of Security"
     Simple_Lockbox = "Open a Simple Lockbox"
     Elaborate_Lockbox = "Open an Elaborate Lockbox"
@@ -85,27 +106,27 @@ class LocationData(typing.NamedTuple):
 
 
 Quest_Locations = [
-    LocationData(0x070000, LocationNames.Q_Cooks_Assistant, 1),
-    LocationData(0x070001, LocationNames.Q_Demon_Slayer, 3),
-    LocationData(0x070002, LocationNames.Q_Restless_Ghost, 1),
-    LocationData(0x070003, LocationNames.Q_Romeo_Juliet, 5),
-    LocationData(0x070004, LocationNames.Q_Sheep_Shearer, 1),
-    LocationData(0x070005, LocationNames.Q_Shield_of_Arrav, 1),
-    LocationData(0x070006, LocationNames.Q_Ernest_the_Chicken, 4),
-    LocationData(0x070007, LocationNames.Q_Vampyre_Slayer, 3),
-    LocationData(0x070008, LocationNames.Q_Imp_Catcher, 1),
-    LocationData(0x070009, LocationNames.Q_Prince_Ali_Rescue, 3),
-    LocationData(0x07000A, LocationNames.Q_Dorics_Quest, 1),
-    LocationData(0x07000B, LocationNames.Q_Black_Knights_Fortress, 3),
-    LocationData(0x07000C, LocationNames.Q_Witchs_Potion, 1),
-    LocationData(0x07000D, LocationNames.Q_Knights_Sword, 1),
-    LocationData(0x07000E, LocationNames.Q_Goblin_Diplomacy, 5),
-    LocationData(0x07000F, LocationNames.Q_Pirates_Treasure, 2),
-    LocationData(0x070010, LocationNames.Q_Rune_Mysteries, 1),
-    LocationData(0x070011, LocationNames.Q_Misthalin_Mystery, 1),
-    LocationData(0x070012, LocationNames.Q_Corsair_Curse, 2),
-    LocationData(0x070013, LocationNames.Q_X_Marks_the_Spot, 1),
-    LocationData(0x070014, LocationNames.Q_Below_Ice_Mountain, 1),
+    LocationData(0x070000, LocationNames.Q_Cooks_Assistant),
+    LocationData(0x070001, LocationNames.Q_Demon_Slayer),
+    LocationData(0x070002, LocationNames.Q_Restless_Ghost),
+    LocationData(0x070003, LocationNames.Q_Romeo_Juliet),
+    LocationData(0x070004, LocationNames.Q_Sheep_Shearer),
+    LocationData(0x070005, LocationNames.Q_Shield_of_Arrav),
+    LocationData(0x070006, LocationNames.Q_Ernest_the_Chicken),
+    LocationData(0x070007, LocationNames.Q_Vampyre_Slayer),
+    LocationData(0x070008, LocationNames.Q_Imp_Catcher),
+    LocationData(0x070009, LocationNames.Q_Prince_Ali_Rescue),
+    LocationData(0x07000A, LocationNames.Q_Dorics_Quest),
+    LocationData(0x07000B, LocationNames.Q_Black_Knights_Fortress),
+    LocationData(0x07000C, LocationNames.Q_Witchs_Potion),
+    LocationData(0x07000D, LocationNames.Q_Knights_Sword),
+    LocationData(0x07000E, LocationNames.Q_Goblin_Diplomacy),
+    LocationData(0x07000F, LocationNames.Q_Pirates_Treasure),
+    LocationData(0x070010, LocationNames.Q_Rune_Mysteries),
+    LocationData(0x070011, LocationNames.Q_Misthalin_Mystery),
+    LocationData(0x070012, LocationNames.Q_Corsair_Curse),
+    LocationData(0x070013, LocationNames.Q_X_Marks_the_Spot),
+    LocationData(0x070014, LocationNames.Q_Below_Ice_Mountain),
 ]
 
 Skill_Locations = [
@@ -161,20 +182,29 @@ Misc_Locations = [
     LocationData(0x070044, LocationNames.Combat_Level_50)
 ]
 
-Resource_Locations = [
-    # Sheep
-    # Spinning Wheel
-    # Wheat
-    # Mill
-    # Furnace
-    # Anvil
-    # Tin Rocks
-    # Copper Rocks
-    # Clay Rocks
-    # Iron Rocks
-    # Coal Rocks
+Quest_Point_Locations = [
+    LocationData(0x070044, LocationNames.QP_Cooks_Assistant),
+    LocationData(0x070045, LocationNames.QP_Demon_Slayer),
+    LocationData(0x070046, LocationNames.QP_Restless_Ghost),
+    LocationData(0x070047, LocationNames.QP_Romeo_Juliet),
+    LocationData(0x070048, LocationNames.QP_Sheep_Shearer),
+    LocationData(0x070049, LocationNames.QP_Shield_of_Arrav),
+    LocationData(0x07004A, LocationNames.QP_Ernest_the_Chicken),
+    LocationData(0x07004B, LocationNames.QP_Vampyre_Slayer),
+    LocationData(0x07004C, LocationNames.QP_Imp_Catcher),
+    LocationData(0x07004D, LocationNames.QP_Prince_Ali_Rescue),
+    LocationData(0x07004E, LocationNames.QP_Dorics_Quest),
+    LocationData(0x07004F, LocationNames.QP_Black_Knights_Fortress),
+    LocationData(0x070050, LocationNames.QP_Witchs_Potion),
+    LocationData(0x070051, LocationNames.QP_Knights_Sword),
+    LocationData(0x070052, LocationNames.QP_Goblin_Diplomacy),
+    LocationData(0x070053, LocationNames.QP_Pirates_Treasure),
+    LocationData(0x070054, LocationNames.QP_Rune_Mysteries),
+    LocationData(0x070055, LocationNames.QP_Misthalin_Mystery),
+    LocationData(0x070056, LocationNames.QP_Corsair_Curse),
+    LocationData(0x070057, LocationNames.QP_X_Marks_the_Spot),
+    LocationData(0x070058, LocationNames.QP_Below_Ice_Mountain),
 ]
-
 all_locations: typing.List[LocationData] = Quest_Locations + Skill_Locations + Misc_Locations
 location_table: typing.Dict[str, int] = {locData.name: locData.id for locData in all_locations}
 location_data_table: typing.Dict[str, LocationData] = {locData.name: locData for locData in all_locations}

@@ -63,7 +63,7 @@ class RegionInfo(typing.NamedTuple):
 all_regions = [
     RegionInfo("Menu",
                [
-                   #LocationNames.Beginner_Clue,
+                   # LocationNames.Beginner_Clue,
                    LocationNames.Oak_Log,
                    LocationNames.Willow_Log,
                    LocationNames.Catch_Lobster,
@@ -72,22 +72,22 @@ all_regions = [
                    LocationNames.Cut_Sapphire,
                    LocationNames.Cut_Emerald,
                    LocationNames.Cut_Ruby,
-                   #LocationNames.Cut_Diamond,
+                   # LocationNames.Cut_Diamond,
                    LocationNames.K_Lesser_Demon,
-                   #LocationNames.Teleport_Varrock,
-                   #LocationNames.Teleport_Falador,
-                   #LocationNames.Teleport_Lumbridge,
+                   # LocationNames.Teleport_Varrock,
+                   # LocationNames.Teleport_Falador,
+                   # LocationNames.Teleport_Lumbridge,
                    LocationNames.Bake_Cake,
                    LocationNames.Bake_Meat_Pizza,
                    LocationNames.Total_XP_5000,
                    LocationNames.Total_XP_25000,
-                   #LocationNames.Total_XP_50000,
+                   # LocationNames.Total_XP_50000,
                    LocationNames.Total_Level_50,
                    LocationNames.Total_Level_100,
-                   #LocationNames.Total_Level_200,
-                   #LocationNames.Combat_Level_10,
+                   # LocationNames.Total_Level_200,
+                   # LocationNames.Combat_Level_10,
                    LocationNames.Combat_Level_25,
-                   #LocationNames.Combat_Level_50,
+                   # LocationNames.Combat_Level_50,
                ],
                {},
                lambda player: {}
@@ -97,7 +97,11 @@ all_regions = [
                    LocationNames.Q_Cooks_Assistant,
                    LocationNames.Q_Rune_Mysteries,
                    LocationNames.Q_Restless_Ghost,
-                   LocationNames.Q_X_Marks_the_Spot
+                   LocationNames.Q_X_Marks_the_Spot,
+                   LocationNames.QP_Cooks_Assistant,
+                   LocationNames.QP_Rune_Mysteries,
+                   LocationNames.QP_Restless_Ghost,
+                   LocationNames.QP_X_Marks_the_Spot
                ],
                {
                    f"{RegionNames.Lumbridge}->{RegionNames.Lumbridge_Swamp}": RegionNames.Lumbridge_Swamp,
@@ -124,7 +128,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Lumbridge_Swamp,
                [
-                   LocationNames.Q_Misthalin_Mystery
+                   LocationNames.Q_Misthalin_Mystery,
+                   LocationNames.QP_Misthalin_Mystery,
                ],
                {
                    f"{RegionNames.Lumbridge_Swamp}->{RegionNames.Lumbridge}": RegionNames.Lumbridge,
@@ -145,7 +150,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Lumbridge_Farms,
                [
-                   LocationNames.Q_Sheep_Shearer
+                   LocationNames.Q_Sheep_Shearer,
+                   LocationNames.QP_Sheep_Shearer
                ],
                {
                    f"{RegionNames.Lumbridge_Farms}->{RegionNames.Lumbridge}": RegionNames.Lumbridge,
@@ -203,7 +209,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Draynor_Village,
                [
-                   LocationNames.Q_Vampyre_Slayer
+                   LocationNames.Q_Vampyre_Slayer,
+                   LocationNames.QP_Vampyre_Slayer,
                ],
                {
                    f"{RegionNames.Draynor_Village}->{RegionNames.Lumbridge_Farms}": RegionNames.Lumbridge_Farms,
@@ -236,7 +243,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Draynor_Manor,
                [
-                   LocationNames.Q_Ernest_the_Chicken
+                   LocationNames.Q_Ernest_the_Chicken,
+                   LocationNames.QP_Ernest_the_Chicken
                ],
                {
                    f"{RegionNames.Draynor_Manor}->{RegionNames.Draynor_Village}": RegionNames.Draynor_Village,
@@ -251,7 +259,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Wizards_Tower,
                [
-                   LocationNames.Q_Imp_Catcher
+                   LocationNames.Q_Imp_Catcher,
+                   LocationNames.QP_Imp_Catcher
                ],
                {
                    f"{RegionNames.Wizards_Tower}->{RegionNames.Draynor_Village}": RegionNames.Draynor_Village,
@@ -263,7 +272,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Al_Kharid,
                [
-                   LocationNames.Q_Prince_Ali_Rescue
+                   LocationNames.Q_Prince_Ali_Rescue,
+                   LocationNames.QP_Prince_Ali_Rescue
                ],
                {
                    f"{RegionNames.Al_Kharid}->{RegionNames.Lumbridge}": RegionNames.Lumbridge,
@@ -359,7 +369,9 @@ all_regions = [
     RegionInfo(RegionNames.Central_Varrock,
                [
                    LocationNames.Q_Demon_Slayer,
-                   LocationNames.Q_Romeo_Juliet
+                   LocationNames.Q_Romeo_Juliet,
+                   LocationNames.QP_Demon_Slayer,
+                   LocationNames.QP_Romeo_Juliet
                ],
                {
                    f"{RegionNames.Central_Varrock}->{RegionNames.South_Of_Varrock}": RegionNames.South_Of_Varrock,
@@ -387,7 +399,8 @@ all_regions = [
     RegionInfo(RegionNames.Varrock_Palace,
                [
                    LocationNames.Q_Shield_of_Arrav,
-                   LocationNames.K_Bryo
+                   LocationNames.K_Bryo,
+                   LocationNames.QP_Shield_of_Arrav,
                ],
                {
                    f"{RegionNames.Varrock_Palace}->{RegionNames.East_Of_Varrock}": RegionNames.East_Of_Varrock,
@@ -558,6 +571,7 @@ all_regions = [
                    LocationNames.Mind_Core,
                    LocationNames.Body_Core,
                    LocationNames.Barronite_Deposit,
+                   LocationNames.QP_Goblin_Diplomacy
                ],
                {
                    f"{RegionNames.Ice_Mountain}->{RegionNames.Wilderness}": RegionNames.Wilderness,
@@ -576,7 +590,9 @@ all_regions = [
     RegionInfo(RegionNames.Dwarven_Mines,
                [
                    LocationNames.Q_Below_Ice_Mountain,
-                   LocationNames.Q_Dorics_Quest
+                   LocationNames.Q_Dorics_Quest,
+                   LocationNames.QP_Below_Ice_Mountain,
+                   LocationNames.QP_Dorics_Quest,
                ],
                {
                    f"{RegionNames.Dwarven_Mines}->{RegionNames.Barbarian_Village}": RegionNames.Barbarian_Village,
@@ -616,7 +632,9 @@ all_regions = [
     RegionInfo(RegionNames.Falador,
                [
                    LocationNames.Q_Knights_Sword,
-                   LocationNames.Q_Black_Knights_Fortress
+                   LocationNames.Q_Black_Knights_Fortress,
+                   LocationNames.QP_Knights_Sword,
+                   LocationNames.QP_Black_Knights_Fortress,
                ],
                {
                    f"{RegionNames.Falador}->{RegionNames.Dwarven_Mines}": RegionNames.Dwarven_Mines,
@@ -643,7 +661,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Falador_Farm,
                [
-                   LocationNames.Q_Corsair_Curse
+                   LocationNames.Q_Corsair_Curse,
+                   LocationNames.QP_Corsair_Curse
                ],
                {
                    f"{RegionNames.Falador_Farm}->{RegionNames.Crafting_Guild}": RegionNames.Crafting_Guild,
@@ -709,7 +728,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Rimmington,
                [
-                   LocationNames.Q_Witchs_Potion
+                   LocationNames.Q_Witchs_Potion,
+                   LocationNames.QP_Witchs_Potion
                ],
                {
                    f"{RegionNames.Rimmington}->{RegionNames.Crafting_Guild}": RegionNames.Crafting_Guild,
@@ -751,7 +771,8 @@ all_regions = [
                ),
     RegionInfo(RegionNames.Port_Sarim,
                [
-                   LocationNames.Q_Pirates_Treasure
+                   LocationNames.Q_Pirates_Treasure,
+                   LocationNames.QP_Pirates_Treasure
                ],
                {
                    f"{RegionNames.Port_Sarim}->{RegionNames.Falador_Farm}": RegionNames.Falador_Farm,
