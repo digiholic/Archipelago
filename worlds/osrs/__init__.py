@@ -117,6 +117,10 @@ class OSRSWorld(World):
             .place_locked_item(self.create_event(ItemNames.QP_Misthalin_Mystery)),
         self.multiworld.get_location(LocationNames.QP_Corsair_Curse, self.player) \
             .place_locked_item(self.create_event(ItemNames.QP_Corsair_Curse))
+        self.multiworld.get_location(LocationNames.QP_X_Marks_the_Spot, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_X_Marks_the_Spot))
+        self.multiworld.get_location(LocationNames.QP_Below_Ice_Mountain, self.player) \
+            .place_locked_item(self.create_event(ItemNames.QP_Below_Ice_Mountain))
 
         # Quest locations
         self.multiworld.get_location(LocationNames.Q_Cooks_Assistant, self.player).access_rule = lambda state: (
@@ -286,6 +290,9 @@ class OSRSWorld(World):
         )
         self.multiworld.get_location(LocationNames.QP_Corsair_Curse, self.player).access_rule = lambda state: (
             self.multiworld.get_location(LocationNames.Q_Corsair_Curse, self.player).can_reach(state)
+        )
+        self.multiworld.get_location(LocationNames.QP_X_Marks_the_Spot, self.player).access_rule = lambda state: (
+            self.multiworld.get_location(LocationNames.Q_X_Marks_the_Spot, self.player).can_reach(state)
         )
         self.multiworld.get_location(LocationNames.QP_Below_Ice_Mountain, self.player).access_rule = lambda state: (
             self.multiworld.get_location(LocationNames.Q_Below_Ice_Mountain, self.player).can_reach(state)

@@ -66,6 +66,7 @@ class ItemNames:
     QP_Rune_Mysteries = "1 QP (Rune Mysteries)"
     QP_Misthalin_Mystery = "1 QP (Misthalin Mystery)"
     QP_Corsair_Curse = "2 QP (The Corsair Curse)"
+    QP_X_Marks_the_Spot = "1 QP (X Marks The Spot)"
     QP_Below_Ice_Mountain = "1 QP (Below Ice Mountain)"
 
 
@@ -152,6 +153,7 @@ QP_Items: typing.List[str] = [
     ItemNames.QP_Rune_Mysteries,
     ItemNames.QP_Misthalin_Mystery,
     ItemNames.QP_Corsair_Curse,
+    ItemNames.QP_X_Marks_the_Spot,
     ItemNames.QP_Below_Ice_Mountain
 ]
 

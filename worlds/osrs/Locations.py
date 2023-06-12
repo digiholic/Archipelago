@@ -76,13 +76,9 @@ class LocationNames:
     K_Ogress_Shaman = "Kill an Ogress Shaman"
     K_Obor = "Kill Obor"
     K_Bryo = "Kill Bryophyta"
-    Teleport_Varrock = "Teleport to Varrock"
-    Teleport_Lumbridge = "Teleport to Lumbridge"
-    Teleport_Falador = "Teleport to Falador"
     Bake_Apple_Pie = "Bake an Apple Pie"
     Bake_Cake = "Bake a Cake"
     Bake_Meat_Pizza = "Bake a Meat Pizza"
-    Prospect_Rune = "Prospect a Rune Rock"
     Total_XP_5000 = "5,000 Total XP"
     Total_XP_25000 = "25,000 Total XP"
     Total_XP_50000 = "50,000 Total XP"
@@ -154,56 +150,52 @@ Skill_Locations = [
     LocationData(0x07002A, LocationNames.Cut_Emerald),
     LocationData(0x07002B, LocationNames.Cut_Ruby),
     LocationData(0x07002C, LocationNames.Cut_Diamond),
-    LocationData(0x07002D, LocationNames.Teleport_Falador),
-    LocationData(0x07002E, LocationNames.Teleport_Varrock),
-    LocationData(0x07002F, LocationNames.Teleport_Lumbridge),
-    LocationData(0x070030, LocationNames.Bake_Apple_Pie),
-    LocationData(0x070031, LocationNames.Bake_Cake),
-    LocationData(0x070032, LocationNames.Bake_Meat_Pizza)
+    LocationData(0x07002D, LocationNames.Bake_Apple_Pie),
+    LocationData(0x07002E, LocationNames.Bake_Cake),
+    LocationData(0x07002F, LocationNames.Bake_Meat_Pizza)
 ]
 
 Misc_Locations = [
-    LocationData(0x070033, LocationNames.Stronghold_Of_Security),
-    LocationData(0x070034, LocationNames.Beginner_Clue),
-    LocationData(0x070035, LocationNames.Edgeville_Altar),
-    LocationData(0x070036, LocationNames.K_Lesser_Demon),
-    LocationData(0x070037, LocationNames.K_Ogress_Shaman),
-    LocationData(0x070039, LocationNames.K_Obor),
-    LocationData(0x07003A, LocationNames.K_Bryo),
-    LocationData(0x07003B, LocationNames.Prospect_Rune),
-    LocationData(0x07003C, LocationNames.Total_XP_5000),
-    LocationData(0x07003D, LocationNames.Total_XP_25000),
-    LocationData(0x07003E, LocationNames.Total_XP_50000),
-    LocationData(0x07003F, LocationNames.Total_Level_50),
-    LocationData(0x070040, LocationNames.Total_Level_100),
-    LocationData(0x070041, LocationNames.Total_Level_200),
-    LocationData(0x070042, LocationNames.Combat_Level_10),
-    LocationData(0x070043, LocationNames.Combat_Level_25),
-    LocationData(0x070044, LocationNames.Combat_Level_50)
+    LocationData(0x070030, LocationNames.Stronghold_Of_Security),
+    LocationData(0x070031, LocationNames.Beginner_Clue),
+    LocationData(0x070032, LocationNames.Edgeville_Altar),
+    LocationData(0x070033, LocationNames.K_Lesser_Demon),
+    LocationData(0x070034, LocationNames.K_Ogress_Shaman),
+    LocationData(0x070035, LocationNames.K_Obor),
+    LocationData(0x070036, LocationNames.K_Bryo),
+    LocationData(0x070037, LocationNames.Total_XP_5000),
+    LocationData(0x070038, LocationNames.Total_XP_25000),
+    LocationData(0x070039, LocationNames.Total_XP_50000),
+    LocationData(0x07003A, LocationNames.Total_Level_50),
+    LocationData(0x07003B, LocationNames.Total_Level_100),
+    LocationData(0x07003C, LocationNames.Total_Level_200),
+    LocationData(0x07003D, LocationNames.Combat_Level_10),
+    LocationData(0x07003E, LocationNames.Combat_Level_25),
+    LocationData(0x07003F, LocationNames.Combat_Level_50)
 ]
 
 Quest_Point_Locations = [
-    LocationData(0x070044, LocationNames.QP_Cooks_Assistant),
-    LocationData(0x070045, LocationNames.QP_Demon_Slayer),
-    LocationData(0x070046, LocationNames.QP_Restless_Ghost),
-    LocationData(0x070047, LocationNames.QP_Romeo_Juliet),
-    LocationData(0x070048, LocationNames.QP_Sheep_Shearer),
-    LocationData(0x070049, LocationNames.QP_Shield_of_Arrav),
-    LocationData(0x07004A, LocationNames.QP_Ernest_the_Chicken),
-    LocationData(0x07004B, LocationNames.QP_Vampyre_Slayer),
-    LocationData(0x07004C, LocationNames.QP_Imp_Catcher),
-    LocationData(0x07004D, LocationNames.QP_Prince_Ali_Rescue),
-    LocationData(0x07004E, LocationNames.QP_Dorics_Quest),
-    LocationData(0x07004F, LocationNames.QP_Black_Knights_Fortress),
-    LocationData(0x070050, LocationNames.QP_Witchs_Potion),
-    LocationData(0x070051, LocationNames.QP_Knights_Sword),
-    LocationData(0x070052, LocationNames.QP_Goblin_Diplomacy),
-    LocationData(0x070053, LocationNames.QP_Pirates_Treasure),
-    LocationData(0x070054, LocationNames.QP_Rune_Mysteries),
-    LocationData(0x070055, LocationNames.QP_Misthalin_Mystery),
-    LocationData(0x070056, LocationNames.QP_Corsair_Curse),
-    LocationData(0x070057, LocationNames.QP_X_Marks_the_Spot),
-    LocationData(0x070058, LocationNames.QP_Below_Ice_Mountain),
+    LocationData(0x070040, LocationNames.QP_Cooks_Assistant),
+    LocationData(0x070041, LocationNames.QP_Demon_Slayer),
+    LocationData(0x070042, LocationNames.QP_Restless_Ghost),
+    LocationData(0x070043, LocationNames.QP_Romeo_Juliet),
+    LocationData(0x070044, LocationNames.QP_Sheep_Shearer),
+    LocationData(0x070045, LocationNames.QP_Shield_of_Arrav),
+    LocationData(0x070046, LocationNames.QP_Ernest_the_Chicken),
+    LocationData(0x070047, LocationNames.QP_Vampyre_Slayer),
+    LocationData(0x070048, LocationNames.QP_Imp_Catcher),
+    LocationData(0x070049, LocationNames.QP_Prince_Ali_Rescue),
+    LocationData(0x07004A, LocationNames.QP_Dorics_Quest),
+    LocationData(0x07004B, LocationNames.QP_Black_Knights_Fortress),
+    LocationData(0x07004C, LocationNames.QP_Witchs_Potion),
+    LocationData(0x07004D, LocationNames.QP_Knights_Sword),
+    LocationData(0x07004E, LocationNames.QP_Goblin_Diplomacy),
+    LocationData(0x07004F, LocationNames.QP_Pirates_Treasure),
+    LocationData(0x070050, LocationNames.QP_Rune_Mysteries),
+    LocationData(0x070051, LocationNames.QP_Misthalin_Mystery),
+    LocationData(0x070052, LocationNames.QP_Corsair_Curse),
+    LocationData(0x070053, LocationNames.QP_X_Marks_the_Spot),
+    LocationData(0x070054, LocationNames.QP_Below_Ice_Mountain),
 ]
 all_locations: typing.List[LocationData] = Quest_Locations + Skill_Locations + Misc_Locations
 location_table: typing.Dict[str, int] = {locData.name: locData.id for locData in all_locations}

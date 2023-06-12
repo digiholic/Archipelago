@@ -74,9 +74,6 @@ all_regions = [
                    LocationNames.Cut_Ruby,
                    # LocationNames.Cut_Diamond,
                    LocationNames.K_Lesser_Demon,
-                   # LocationNames.Teleport_Varrock,
-                   # LocationNames.Teleport_Falador,
-                   # LocationNames.Teleport_Lumbridge,
                    LocationNames.Bake_Cake,
                    LocationNames.Bake_Meat_Pizza,
                    LocationNames.Total_XP_5000,
@@ -854,9 +851,7 @@ all_regions = [
                })
                ),
     RegionInfo(RegionNames.Wilderness,
-               [
-                   LocationNames.Prospect_Rune
-               ],
+               [],
                {
                    f"{RegionNames.Wilderness}->{RegionNames.Ice_Mountain}": RegionNames.Ice_Mountain,
                    f"{RegionNames.Wilderness}->{RegionNames.Monastery}": RegionNames.Monastery,
