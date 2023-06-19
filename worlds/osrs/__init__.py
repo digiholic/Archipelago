@@ -299,6 +299,7 @@ class OSRSWorld(World):
         )
 
         # Other locations
+        """
         self.multiworld.get_location(LocationNames.Simple_Lockbox, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
@@ -308,6 +309,7 @@ class OSRSWorld(World):
         self.multiworld.get_location(LocationNames.Ornate_Lockbox, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
+        """
         self.multiworld.get_location(LocationNames.Guppy, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
@@ -317,12 +319,14 @@ class OSRSWorld(World):
         self.multiworld.get_location(LocationNames.Tetra, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
+        """
         self.multiworld.get_location(LocationNames.Mind_Core, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player) and state.has(ItemNames.QP_Rune_Mysteries, self.player)
         )
         self.multiworld.get_location(LocationNames.Body_Core, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player) and state.has(ItemNames.QP_Rune_Mysteries, self.player)
         )
+        """
         self.multiworld.get_location(LocationNames.Barronite_Deposit, self.player).access_rule = lambda state: (
             state.has(ItemNames.QP_Below_Ice_Mountain, self.player)
         )
@@ -355,6 +359,7 @@ class OSRSWorld(World):
                 (state.can_reach(RegionNames.Karamja, None, self.player) or state.can_reach(RegionNames.Corsair_Cove,
                                                                                             None, self.player))
         )
+        """
         self.multiworld.get_location(LocationNames.Holy_Symbol, self.player).access_rule = lambda state: (
             # Mould and Silver
                 (state.can_reach(RegionNames.Al_Kharid, None, self.player) or state.can_reach(
@@ -365,6 +370,7 @@ class OSRSWorld(World):
                 state.can_reach(RegionNames.Spinning_Wheel, None, self.player) and
                 state.can_reach(RegionNames.Monastery, None, self.player)
         )
+        """
         self.multiworld.get_location(LocationNames.Smelt_Silver, self.player).access_rule = lambda state: (
                 state.can_reach(RegionNames.Silver_Rock, None, self.player) and
                 state.can_reach(RegionNames.Furnace, None, self.player)

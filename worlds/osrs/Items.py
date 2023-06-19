@@ -117,20 +117,13 @@ Gear_Items: typing.List[ItemData] = [
     ItemData(0x07001D, ItemNames.Progressive_Armor, ItemClassification.progression, 6),
     ItemData(0x07001E, ItemNames.Progressive_Weapons, ItemClassification.progression, 6),
     ItemData(0x07001F, ItemNames.Progressive_Tools, ItemClassification.useful, 6),
-    ItemData(0x070020, ItemNames.Progressive_Range_Armor, ItemClassification.useful, 2),
+    ItemData(0x070020, ItemNames.Progressive_Range_Armor, ItemClassification.useful, 3),
     ItemData(0x070021, ItemNames.Progressive_Range_Weapon, ItemClassification.useful, 3),
     ItemData(0x070022, ItemNames.Progressive_Magic, ItemClassification.useful, 2)
 ]
 
 Supply_Items: typing.List[ItemData] = [
-    ItemData(0x070023, ItemNames.Lobsters, ItemClassification.filler, 2),
-    ItemData(0x070024, ItemNames.Swordfish, ItemClassification.filler, 2),
-    ItemData(0x070025, ItemNames.Energy_Potions, ItemClassification.filler, 2),
-    ItemData(0x070026, ItemNames.Coins, ItemClassification.filler, 1),
-    ItemData(0x070027, ItemNames.Mind_Runes, ItemClassification.filler, 2),
-    ItemData(0x070028, ItemNames.Chaos_Runes, ItemClassification.filler, 2),
-    ItemData(0x070029, ItemNames.Death_Runes, ItemClassification.filler, 2),
-    ItemData(0x07002A, ItemNames.Law_Runes, ItemClassification.filler, 2)
+    ItemData(0x070026, ItemNames.Coins, ItemClassification.filler)
 ]
 
 QP_Items: typing.List[str] = [
