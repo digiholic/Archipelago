@@ -26,6 +26,7 @@ class OSRSWorld(World):
     game = "Old School Runescape"
     option_definitions = OSRSOptions
     topology_present = True
+    web = OSRSWeb()
 
     data_version = 1
 
