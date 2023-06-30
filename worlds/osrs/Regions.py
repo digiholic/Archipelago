@@ -72,7 +72,7 @@ all_regions = [
                    LocationNames.Cut_Sapphire,
                    LocationNames.Cut_Emerald,
                    LocationNames.Cut_Ruby,
-                   LocationNames.Cut_Diamond,
+                   # LocationNames.Cut_Diamond,
                    LocationNames.K_Lesser_Demon,
                    LocationNames.Bake_Cake,
                    LocationNames.Bake_Meat_Pizza,

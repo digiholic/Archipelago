@@ -122,10 +122,6 @@ Gear_Items: typing.List[ItemData] = [
     ItemData(0x070022, ItemNames.Progressive_Magic, ItemClassification.useful, 2)
 ]
 
-Supply_Items: typing.List[ItemData] = [
-    ItemData(0x070026, ItemNames.Coins, ItemClassification.filler)
-]
-
 QP_Items: typing.List[str] = [
     ItemNames.QP_Cooks_Assistant,
     ItemNames.QP_Demon_Slayer,
@@ -150,6 +146,6 @@ QP_Items: typing.List[str] = [
     ItemNames.QP_Below_Ice_Mountain
 ]
 
-all_items: typing.List[ItemData] = Location_Items + Gear_Items + Supply_Items
+all_items: typing.List[ItemData] = Location_Items + Gear_Items
 item_table: typing.Dict[str, ItemData] = {item.itemName: item for item in all_items}
 items_by_id: typing.Dict[int, ItemData] = {item.id: item for item in all_items}

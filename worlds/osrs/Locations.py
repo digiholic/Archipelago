@@ -149,7 +149,7 @@ Skill_Locations = [
     LocationData(0x070029, LocationNames.Cut_Sapphire),
     LocationData(0x07002A, LocationNames.Cut_Emerald),
     LocationData(0x07002B, LocationNames.Cut_Ruby),
-    LocationData(0x07002C, LocationNames.Cut_Diamond),
+    # LocationData(0x07002C, LocationNames.Cut_Diamond),
     LocationData(0x07002D, LocationNames.Bake_Apple_Pie),
     LocationData(0x07002E, LocationNames.Bake_Cake),
     LocationData(0x07002F, LocationNames.Bake_Meat_Pizza)
