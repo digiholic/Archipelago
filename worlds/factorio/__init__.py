@@ -96,7 +96,7 @@ class Factorio(World):
         "Progressive": set(progressive_tech_table.keys()),
     }
     data_version = 8
-    required_client_version = (0, 4, 0)
+    required_client_version = (0, 4, 2)
 
     ordered_science_packs: typing.List[str] = MaxSciencePack.get_ordered_science_packs()
     tech_tree_layout_prerequisites: typing.Dict[FactorioScienceLocation, typing.Set[FactorioScienceLocation]]
@@ -541,7 +541,7 @@ class FactorioScienceLocation(FactorioLocation):
         super(FactorioScienceLocation, self).__init__(player, name, address, parent)
         # "AP-{Complexity}-{Cost}"
         self.complexity = int(self.name[3]) - 1
-        self.rel_cost = int(self.name[5:], 16)
+        self.rel_cost = int(self.name[5:])
 
         self.ingredients = {Factorio.ordered_science_packs[self.complexity]: 1}
         for complexity in range(self.complexity):
