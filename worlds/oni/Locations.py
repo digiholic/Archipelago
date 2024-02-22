@@ -11,3 +11,4 @@ class ONILocation(Location):
 class LocationData(typing.NamedTuple):
     id: int
     name: str
+
