@@ -8,7 +8,7 @@ from .Names import RegionNames
 
 class RegionInfo(typing.NamedTuple):
     name: str
-    Locations: typing.List[str]
+    locations: typing.List[str]
 
 
 all_regions = [

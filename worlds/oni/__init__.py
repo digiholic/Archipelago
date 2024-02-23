@@ -4,8 +4,11 @@ from typing import *
 from BaseClasses import Item, Tutorial, ItemClassification, Region, Entrance, CollectionState, MultiWorld
 from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import add_rule
+from .Items import ONIItem, items_by_name, all_items
+from .Locations import ONILocation, all_locations
 from .Names import LocationNames, ItemNames, RegionNames
 from .Options import ONIOptions
+from .Regions import all_regions
 
 
 class ONIWeb(WebWorld):
@@ -28,8 +31,11 @@ class ONIWorld(World):
     options: ONIOptions
     topology_present = False
     web = ONIWeb()
-    base_id = 0x820000
+    base_id = 0x257514000 #0xYGEN___, clever! Thanks, Medic
     data_version = 0
+
+    item_name_to_id = {data.itemName: base_id+index for index, data in enumerate(all_items)}
+    location_name_to_id = {loc_name: base_id+index for index, loc_name in enumerate(all_locations)}
 
     def __init__(self, world: MultiWorld, player: int):
         super().__init__(world, player)
@@ -43,14 +49,56 @@ class ONIWorld(World):
 
     def create_regions(self) -> None:
         """Method for creating and connecting regions for the World."""
-        pass
+        regions_by_name = {}
+
+        for region_info in all_regions:
+            region = Region(region_info.name, self.player, self.multiworld)
+            regions_by_name[region_info.name] = region
+            for location_name in region_info.locations:
+                location = ONILocation(self.player, location_name, self.location_name_to_id.get(location_name, None), region)
+                region.locations.append(location)
+            self.multiworld.regions.append(region)
+
+        regions_by_name["Menu"].connect(
+            regions_by_name[RegionNames.Basic], None, None)
+        regions_by_name[RegionNames.Basic].connect(
+            regions_by_name[RegionNames.Advanced], None, self.can_advanced_research)
+        regions_by_name[RegionNames.Advanced].connect(
+            regions_by_name[RegionNames.Nuclear], None, self.can_nuclear_research)
+        regions_by_name[RegionNames.Nuclear].connect(
+            regions_by_name[RegionNames.Space_DLC], None, self.can_space_research)
+
+    def can_advanced_research(self, state: CollectionState) -> bool:
+        return state.has_all([ItemNames.AdvancedResearchCenter, ItemNames.BetaResearchPoint], self.player)
+
+    def can_nuclear_research(self, state: CollectionState) -> bool:
+        return state.has_all([ItemNames.NuclearResearchCenter, ItemNames.DeltaResearchPoint], self.player) and \
+            state.has_any([ItemNames.ManualHighEnergyParticleSpawner, ItemNames.HighEnergyParticleSpawner], self.player)
+
+    def can_space_research(self, state: CollectionState) -> bool:
+        return state.has_all([ItemNames.CosmicResearchCenter, ItemNames.DLC1CosmicResearchCenter,
+                              ItemNames.OrbitalResearchPoint], self.player) and self.can_reach_space(state)
+
+    def can_reach_space(self, state: CollectionState) -> bool:
+        # Launchpad is non-negotiable
+        running_state = state.has_any([ItemNames.LaunchPad],self.player)
+        # Has any engine and fuel tank
+        running_state = running_state and state.has_any([], self.player)
+        # Has any crew module
+        running_state = running_state and state.has_any(
+            [ItemNames.HabitatModuleSmall, ItemNames.HabitatModuleMedium], self.player)
+        # Has any nosecone
+        running_state = running_state and state.has_any(
+            [ItemNames.NoseconeBasic, ItemNames.NoseconeHarvest, ItemNames.HabitatModuleSmall], self.player)
+        return running_state
 
     def create_items(self) -> None:
         """
         Method for creating and submitting items to the itempool. Items and Regions must *not* be created and submitted
         to the MultiWorld after this step. If items need to be placed during pre_fill use `get_prefill_items`.
         """
-        pass
+        for item in all_items:
+            self.multiworld.itempool.append(self.create_item(item.itemName))
 
     def set_rules(self) -> None:
         """Method for setting the rules on the World's regions and locations."""
@@ -82,6 +130,7 @@ class ONIWorld(World):
     def generate_output(self, output_directory: str) -> None:
         """This method gets called from a threadpool, do not use multiworld.random here.
         If you need any last-second randomization, use self.random instead."""
+        # TODO generate mod json
         pass
 
     def fill_slot_data(self) -> Dict[str, Any]:  # json of WebHostLib.models.Slot
@@ -105,9 +154,5 @@ class ONIWorld(World):
     def create_item(self, name: str) -> "Item":
         """Create an item for this world type and player.
         Warning: this may be called with self.world = None, for example by MultiServer"""
-        raise NotImplementedError
-
-    def get_filler_item_name(self) -> str:
-        """Called when the item pool needs to be filled with additional items to match location count."""
-        logging.warning(f"World {self} is generating a filler item without custom filler pool.")
-        return self.multiworld.random.choice(tuple(self.item_name_to_id.keys()))
+        item = items_by_name[name]
+        return ONIItem(item.itemName, item.progression, self.item_name_to_id[name], self.player)
