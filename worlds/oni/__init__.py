@@ -131,6 +131,7 @@ class ONIWorld(World):
         """This method gets called from a threadpool, do not use multiworld.random here.
         If you need any last-second randomization, use self.random instead."""
         # TODO generate mod json
+        
         pass
 
     def fill_slot_data(self) -> Dict[str, Any]:  # json of WebHostLib.models.Slot

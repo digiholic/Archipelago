@@ -339,3 +339,7 @@ all_locations = [
     LocationNames.AdvancedScanners2,
     LocationNames.AdvancedScanners3
 ]
+
+locations_by_tech_category: typing.Dict[str, typing.List[str]] = {
+
+}
