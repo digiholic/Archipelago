@@ -31,11 +31,11 @@ class ONIWorld(World):
     options: ONIOptions
     topology_present = False
     web = ONIWeb()
-    base_id = 0x257514000 #0xYGEN___, clever! Thanks, Medic
+    base_id = 0x257514000  # 0xYGEN___, clever! Thanks, Medic
     data_version = 0
 
-    item_name_to_id = {data.itemName: base_id+index for index, data in enumerate(all_items)}
-    location_name_to_id = {loc_name: base_id+index for index, loc_name in enumerate(all_locations)}
+    item_name_to_id = {data.itemName: base_id + index for index, data in enumerate(all_items)}
+    location_name_to_id = {loc_name: base_id + index for index, loc_name in enumerate(all_locations)}
 
     def __init__(self, world: MultiWorld, player: int):
         super().__init__(world, player)
@@ -55,7 +55,8 @@ class ONIWorld(World):
             region = Region(region_info.name, self.player, self.multiworld)
             regions_by_name[region_info.name] = region
             for location_name in region_info.locations:
-                location = ONILocation(self.player, location_name, self.location_name_to_id.get(location_name, None), region)
+                location = ONILocation(self.player, location_name, self.location_name_to_id.get(location_name, None),
+                                       region)
                 region.locations.append(location)
             self.multiworld.regions.append(region)
 
@@ -69,11 +70,15 @@ class ONIWorld(World):
             regions_by_name[RegionNames.Space_DLC], None, self.can_space_research)
 
     def can_advanced_research(self, state: CollectionState) -> bool:
-        return state.has_all([ItemNames.AdvancedResearchCenter, ItemNames.BetaResearchPoint], self.player)
+        # Need to be able to actually do the research, and handle liquids and gas
+        return state.has_all([ItemNames.AdvancedResearchCenter, ItemNames.BetaResearchPoint], self.player) and \
+               self.can_manage_liquid(state) and self.can_manage_gas(state)
 
     def can_nuclear_research(self, state: CollectionState) -> bool:
+        # Need the material science terminal, and also be able to make refined metal
         return state.has_all([ItemNames.NuclearResearchCenter, ItemNames.DeltaResearchPoint], self.player) and \
-            state.has_any([ItemNames.ManualHighEnergyParticleSpawner, ItemNames.HighEnergyParticleSpawner], self.player)
+               state.has_any([ItemNames.ManualHighEnergyParticleSpawner, ItemNames.HighEnergyParticleSpawner],
+                             self.player) and self.can_refine_metal(state)
 
     def can_space_research(self, state: CollectionState) -> bool:
         return state.has_all([ItemNames.CosmicResearchCenter, ItemNames.DLC1CosmicResearchCenter,
@@ -81,7 +86,7 @@ class ONIWorld(World):
 
     def can_reach_space(self, state: CollectionState) -> bool:
         # Launchpad is non-negotiable
-        running_state = state.has_any([ItemNames.LaunchPad],self.player)
+        running_state = state.has_any([ItemNames.LaunchPad], self.player)
         # Has any engine and fuel tank
         running_state = running_state and state.has_any([], self.player)
         # Has any crew module
@@ -90,6 +95,44 @@ class ONIWorld(World):
         # Has any nosecone
         running_state = running_state and state.has_any(
             [ItemNames.NoseconeBasic, ItemNames.NoseconeHarvest, ItemNames.HabitatModuleSmall], self.player)
+        return running_state
+
+    def can_ranch(self, state: CollectionState) -> bool:
+        return state.has_all(
+            [ItemNames.CreatureDeliveryPoint, ItemNames.CreatureFeeder, ItemNames.RanchStation], self.player)
+
+    def can_make_plastic(self, state: CollectionState) -> bool:
+        # Either polymer press chain, or ranching dreckos
+        return state.has_all([ItemNames.OilWellCap, ItemNames.OilRefinery, ItemNames.Polymerizer], self.player) or \
+               (self.can_ranch(state) and state.has(ItemNames.ShearingStation, self.player))
+
+    def can_refine_metal(self, state: CollectionState) -> bool:
+        # Crusher, Refinery, or Smooth Hatches
+        return state.has_any([ItemNames.RockCrusher, ItemNames.MetalRefinery], self.player) or self.can_ranch(state)
+
+    def can_manage_liquid(self, state: CollectionState) -> bool:
+        # Some form of liquid pump
+        running_state = state.has(ItemNames.LiquidPump, self.player) or \
+                        (state.has(ItemNames.LiquidMiniPump, self.player) and self.can_make_plastic(state))
+        # Some form of liquid pipe
+        running_state = running_state and (
+                state.has_any([ItemNames.LiquidConduit, ItemNames.InsulatedLiquidConduit], self.player) or
+                state.has(ItemNames.LiquidConduitRadiant, self.player) and self.can_refine_metal(state))
+        # Liquid Vent
+        running_state = running_state and state.has(ItemNames.LiquidVent, self.player)
+        return running_state
+
+    def can_manage_gas(self, state: CollectionState) -> bool:
+        # Some form of gas pump
+        running_state = state.has(ItemNames.GasPump, self.player) or \
+                        (state.has(ItemNames.GasMiniPump, self.player) and self.can_make_plastic(state))
+        # Some form of gas pipe
+        running_state = running_state and (state.has_any(
+            [ItemNames.GasConduit, ItemNames.InsulatedGasConduit, ItemNames.GasConduitRadiant], self.player))
+        # Some form of gas vent
+        running_state = running_state and state.has(ItemNames.GasVent, self.player) or \
+                        (state.has(ItemNames.GasVentHighPressure, self.player) and
+                         self.can_make_plastic(state) and self.can_refine_metal(state))
         return running_state
 
     def create_items(self) -> None:
@@ -131,7 +174,7 @@ class ONIWorld(World):
         """This method gets called from a threadpool, do not use multiworld.random here.
         If you need any last-second randomization, use self.random instead."""
         # TODO generate mod json
-        
+
         pass
 
     def fill_slot_data(self) -> Dict[str, Any]:  # json of WebHostLib.models.Slot
