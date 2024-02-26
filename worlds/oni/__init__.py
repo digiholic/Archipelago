@@ -1,14 +1,18 @@
+import json
 import logging
+import os
 from typing import *
 
 from BaseClasses import Item, Tutorial, ItemClassification, Region, Entrance, CollectionState, MultiWorld
 from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import add_rule
-from .Items import ONIItem, items_by_name, all_items
-from .Locations import ONILocation, all_locations
+from .Items import ONIItem, items_by_name, all_items, display_name_to_internal_name
+from .Locations import ONILocation, all_locations, location_to_tech_name
+from .ModJson import ModJson
 from .Names import LocationNames, ItemNames, RegionNames
 from .Options import ONIOptions
 from .Regions import all_regions
+from .Rules import *
 
 
 class ONIWeb(WebWorld):
@@ -34,11 +38,8 @@ class ONIWorld(World):
     base_id = 0x257514000  # 0xYGEN___, clever! Thanks, Medic
     data_version = 0
 
-    item_name_to_id = {data.itemName: base_id + index for index, data in enumerate(all_items)}
-    location_name_to_id = {loc_name: base_id + index for index, loc_name in enumerate(all_locations)}
-
-    def __init__(self, world: MultiWorld, player: int):
-        super().__init__(world, player)
+    item_name_to_id = {data.itemName: 0x257514000 + index for index, data in enumerate(all_items)}
+    location_name_to_id = {loc_name: 0x257514000 + index for index, loc_name in enumerate(all_locations)}
 
     def generate_early(self) -> None:
         """
@@ -63,77 +64,11 @@ class ONIWorld(World):
         regions_by_name["Menu"].connect(
             regions_by_name[RegionNames.Basic], None, None)
         regions_by_name[RegionNames.Basic].connect(
-            regions_by_name[RegionNames.Advanced], None, self.can_advanced_research)
+            regions_by_name[RegionNames.Advanced], None, lambda state: can_advanced_research(self.player, state))
         regions_by_name[RegionNames.Advanced].connect(
-            regions_by_name[RegionNames.Nuclear], None, self.can_nuclear_research)
+            regions_by_name[RegionNames.Nuclear], None, lambda state: can_nuclear_research(self.player, state))
         regions_by_name[RegionNames.Nuclear].connect(
-            regions_by_name[RegionNames.Space_DLC], None, self.can_space_research)
-
-    def can_advanced_research(self, state: CollectionState) -> bool:
-        # Need to be able to actually do the research, and handle liquids and gas
-        return state.has_all([ItemNames.AdvancedResearchCenter, ItemNames.BetaResearchPoint], self.player) and \
-               self.can_manage_liquid(state) and self.can_manage_gas(state)
-
-    def can_nuclear_research(self, state: CollectionState) -> bool:
-        # Need the material science terminal, and also be able to make refined metal
-        return state.has_all([ItemNames.NuclearResearchCenter, ItemNames.DeltaResearchPoint], self.player) and \
-               state.has_any([ItemNames.ManualHighEnergyParticleSpawner, ItemNames.HighEnergyParticleSpawner],
-                             self.player) and self.can_refine_metal(state)
-
-    def can_space_research(self, state: CollectionState) -> bool:
-        return state.has_all([ItemNames.CosmicResearchCenter, ItemNames.DLC1CosmicResearchCenter,
-                              ItemNames.OrbitalResearchPoint], self.player) and self.can_reach_space(state)
-
-    def can_reach_space(self, state: CollectionState) -> bool:
-        # Launchpad is non-negotiable
-        running_state = state.has_any([ItemNames.LaunchPad], self.player)
-        # Has any engine and fuel tank
-        running_state = running_state and state.has_any([], self.player)
-        # Has any crew module
-        running_state = running_state and state.has_any(
-            [ItemNames.HabitatModuleSmall, ItemNames.HabitatModuleMedium], self.player)
-        # Has any nosecone
-        running_state = running_state and state.has_any(
-            [ItemNames.NoseconeBasic, ItemNames.NoseconeHarvest, ItemNames.HabitatModuleSmall], self.player)
-        return running_state
-
-    def can_ranch(self, state: CollectionState) -> bool:
-        return state.has_all(
-            [ItemNames.CreatureDeliveryPoint, ItemNames.CreatureFeeder, ItemNames.RanchStation], self.player)
-
-    def can_make_plastic(self, state: CollectionState) -> bool:
-        # Either polymer press chain, or ranching dreckos
-        return state.has_all([ItemNames.OilWellCap, ItemNames.OilRefinery, ItemNames.Polymerizer], self.player) or \
-               (self.can_ranch(state) and state.has(ItemNames.ShearingStation, self.player))
-
-    def can_refine_metal(self, state: CollectionState) -> bool:
-        # Crusher, Refinery, or Smooth Hatches
-        return state.has_any([ItemNames.RockCrusher, ItemNames.MetalRefinery], self.player) or self.can_ranch(state)
-
-    def can_manage_liquid(self, state: CollectionState) -> bool:
-        # Some form of liquid pump
-        running_state = state.has(ItemNames.LiquidPump, self.player) or \
-                        (state.has(ItemNames.LiquidMiniPump, self.player) and self.can_make_plastic(state))
-        # Some form of liquid pipe
-        running_state = running_state and (
-                state.has_any([ItemNames.LiquidConduit, ItemNames.InsulatedLiquidConduit], self.player) or
-                state.has(ItemNames.LiquidConduitRadiant, self.player) and self.can_refine_metal(state))
-        # Liquid Vent
-        running_state = running_state and state.has(ItemNames.LiquidVent, self.player)
-        return running_state
-
-    def can_manage_gas(self, state: CollectionState) -> bool:
-        # Some form of gas pump
-        running_state = state.has(ItemNames.GasPump, self.player) or \
-                        (state.has(ItemNames.GasMiniPump, self.player) and self.can_make_plastic(state))
-        # Some form of gas pipe
-        running_state = running_state and (state.has_any(
-            [ItemNames.GasConduit, ItemNames.InsulatedGasConduit, ItemNames.GasConduitRadiant], self.player))
-        # Some form of gas vent
-        running_state = running_state and state.has(ItemNames.GasVent, self.player) or \
-                        (state.has(ItemNames.GasVentHighPressure, self.player) and
-                         self.can_make_plastic(state) and self.can_refine_metal(state))
-        return running_state
+            regions_by_name[RegionNames.Space_DLC], None, lambda state: can_space_research(self.player, state))
 
     def create_items(self) -> None:
         """
@@ -174,8 +109,24 @@ class ONIWorld(World):
         """This method gets called from a threadpool, do not use multiworld.random here.
         If you need any last-second randomization, use self.random instead."""
         # TODO generate mod json
+        science_dicts = {}
+        item_names = [data.itemName for data in all_items]
+        for location_name in all_locations:
+            tech_name = location_to_tech_name[location_name]
+            if tech_name not in science_dicts:
+                science_dicts[tech_name] = []
 
-        pass
+            location = self.multiworld.get_location(location_name, self.player)
+            ap_item = location.item
+            if ap_item is not None and ap_item.name in item_names:
+                science_dicts[tech_name].append(display_name_to_internal_name[ap_item.name])
+
+        mod_json = ModJson(self.multiworld.seed, self.multiworld.player_name[self.player], science_dicts)
+        json_string = json.dumps(mod_json, indent=4)
+        output_file_path = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.json")
+        with open(output_file_path, "w") as file:
+            file.write(json_string)
+
 
     def fill_slot_data(self) -> Dict[str, Any]:  # json of WebHostLib.models.Slot
         """Fill in the `slot_data` field in the `Connected` network package.
