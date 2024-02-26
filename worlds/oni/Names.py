@@ -433,7 +433,7 @@ class TechNames:
     AdvancedScanners = "Sensitive Microimaging"
     SkyDetectors = "Celestial Detection"
 
-    
+
 class LocationNames:
     # Basic Tech
     FarmingTech1 = "FarmingTech - 1"

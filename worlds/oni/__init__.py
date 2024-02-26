@@ -112,7 +112,7 @@ class ONIWorld(World):
         science_dicts = {}
         item_names = [data.itemName for data in all_items]
         for location_name in all_locations:
-            tech_name = location_to_tech_name[location_name]
+            tech_name = display_name_to_internal_name[location_to_tech_name[location_name]]
             if tech_name not in science_dicts:
                 science_dicts[tech_name] = []
 
@@ -122,7 +122,7 @@ class ONIWorld(World):
                 science_dicts[tech_name].append(display_name_to_internal_name[ap_item.name])
 
         mod_json = ModJson(self.multiworld.seed, self.multiworld.player_name[self.player], science_dicts)
-        json_string = json.dumps(mod_json, indent=4)
+        json_string = mod_json.to_json(indent=4)
         output_file_path = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.json")
         with open(output_file_path, "w") as file:
             file.write(json_string)
