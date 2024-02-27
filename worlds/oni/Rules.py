@@ -4,20 +4,19 @@ from worlds.oni import ItemNames
 
 def can_advanced_research(player, state: CollectionState) -> bool:
     # Need to be able to actually do the research, and handle liquids and gas
-    return state.has_all([ItemNames.AdvancedResearchCenter, ItemNames.BetaResearchPoint], player) and \
+    return state.has(ItemNames.AdvancedResearchCenter, player) and \
            can_manage_liquid(player, state) and can_manage_gas(player, state)
 
 
 def can_nuclear_research(player, state: CollectionState) -> bool:
     # Need the material science terminal, and also be able to make refined metal
-    return state.has_all([ItemNames.NuclearResearchCenter, ItemNames.DeltaResearchPoint], player) and \
+    return state.has(ItemNames.NuclearResearchCenter, player) and \
            state.has_any([ItemNames.ManualHighEnergyParticleSpawner, ItemNames.HighEnergyParticleSpawner],
                          player) and can_refine_metal(player, state)
 
 
 def can_space_research(player, state: CollectionState) -> bool:
-    return state.has_all([ItemNames.DLC1CosmicResearchCenter,
-                          ItemNames.OrbitalResearchPoint], player) and can_reach_space(player, state)
+    return state.has(ItemNames.DLC1CosmicResearchCenter, player) and can_reach_space(player, state)
 
 
 def can_reach_space(player, state: CollectionState) -> bool:

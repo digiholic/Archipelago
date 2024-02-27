@@ -1,11 +1,8 @@
-import json
-import logging
 import os
 from typing import *
 
-from BaseClasses import Item, Tutorial, ItemClassification, Region, Entrance, CollectionState, MultiWorld
+from BaseClasses import Item, Tutorial, Region
 from worlds.AutoWorld import WebWorld, World
-from worlds.generic.Rules import add_rule
 from .Items import ONIItem, items_by_name, all_items, display_name_to_internal_name
 from .Locations import ONILocation, all_locations, location_to_tech_name
 from .ModJson import ModJson
@@ -121,7 +118,7 @@ class ONIWorld(World):
             if ap_item is not None and ap_item.name in item_names:
                 science_dicts[tech_name].append(display_name_to_internal_name[ap_item.name])
 
-        mod_json = ModJson(self.multiworld.seed, self.multiworld.player_name[self.player], science_dicts)
+        mod_json = ModJson(str(self.multiworld.seed), self.multiworld.player_name[self.player], science_dicts)
         json_string = mod_json.to_json(indent=4)
         output_file_path = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.json")
         with open(output_file_path, "w") as file:

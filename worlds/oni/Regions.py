@@ -1,8 +1,6 @@
 import typing
 
-from BaseClasses import CollectionState
 from .Locations import LocationNames
-from .Items import ItemNames
 from .Names import RegionNames
 
 
@@ -36,7 +34,7 @@ all_regions = [
                    LocationNames.AdvancedResearch2,
                    LocationNames.AdvancedResearch3,
                    LocationNames.AdvancedResearch4,
-                   LocationNames.AdvancedResearch5,
+                   # LocationNames.AdvancedResearch5,
                    LocationNames.MedicineI1,
                    LocationNames.MedicineII1,
                    LocationNames.MedicineII2,
@@ -80,7 +78,7 @@ all_regions = [
                    LocationNames.LogicControl2,
                    LocationNames.LogicControl3,
                    LocationNames.LogicControl4,
-                   LocationNames.LogicControl5
+                   # LocationNames.LogicControl5
                ]),
     RegionInfo(RegionNames.Advanced,
                [
@@ -128,7 +126,7 @@ all_regions = [
                     LocationNames.SmartStorage1,
                     LocationNames.SmartStorage2,
                     LocationNames.SmartStorage3,
-                    LocationNames.SmartStorage4,
+                    # LocationNames.SmartStorage4,
                     LocationNames.SolidTransport1,
                     LocationNames.SolidTransport2,
                     LocationNames.SolidTransport3,
@@ -150,7 +148,7 @@ all_regions = [
                     LocationNames.CrashPlan1,
                     LocationNames.CrashPlan2,
                     LocationNames.CrashPlan3,
-                    LocationNames.CrashPlan4,
+                    # LocationNames.CrashPlan4,
                     LocationNames.NotificationSystems1,
                     LocationNames.NotificationSystems2,
                     LocationNames.NotificationSystems3,
@@ -158,7 +156,7 @@ all_regions = [
                     LocationNames.SkyDetectors2,
                     LocationNames.NuclearResearch1,
                     LocationNames.NuclearResearch2,
-                    LocationNames.NuclearResearch3,
+                    # LocationNames.NuclearResearch3,
                     LocationNames.AdvancedNuclearResearch1,
                     LocationNames.AdvancedNuclearResearch2,
                     LocationNames.MedicineIII1,
@@ -224,7 +222,7 @@ all_regions = [
                     LocationNames.Suits2,
                     LocationNames.Suits3,
                     LocationNames.Suits4,
-                    LocationNames.Suits5,
+                    # LocationNames.Suits5,
                     LocationNames.Clothing1,
                     LocationNames.Clothing2,
                     LocationNames.Clothing3,
