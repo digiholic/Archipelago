@@ -53,6 +53,11 @@ class TrackerCommandProcessor(ClientCommandProcessor):
         for event in sorted(events):
             logger.info(event)
 
+    def _cmd_show_location_count(self):
+        """Toggle Display the count of available locations in the location tab"""
+        self.ctx.display_location_count = not self.ctx.display_location_count
+        logger.info("Location Counter " + "Enabled" if self.ctx.display_location_count else "Disabled")
+
 
 class TrackerGameContext(CommonContext):
     from kvui import GameManager
@@ -69,6 +74,7 @@ class TrackerGameContext(CommonContext):
     output_format = "Both"
     hide_excluded = False
     re_gen_passthrough = None
+    display_location_count = False
 
     def __init__(self, server_address, password):
         super().__init__(server_address, password)
@@ -441,6 +447,7 @@ def updateTracker(ctx: TrackerGameContext):
     ctx.clear_page()
     regions = []
     locations = []
+    locations_available = 0
     for temp_loc in ctx.multiworld.get_reachable_locations(state, ctx.player_id):
         if temp_loc.address == None or isinstance(temp_loc.address, list):
             continue
@@ -458,6 +465,7 @@ def updateTracker(ctx: TrackerGameContext):
                     ctx.log_to_tab(region + " | " + temp_loc.name, True)
                 elif ctx.output_format == "Location":
                     ctx.log_to_tab(temp_loc.name, True)
+                    locations_available += 1
                 if region not in regions:
                     regions.append(region)
                     if ctx.output_format == "Region":
@@ -468,7 +476,7 @@ def updateTracker(ctx: TrackerGameContext):
             ctx.log_to_tab("ERROR: location " + temp_loc.name + " broke something, report this to discord")
             pass
     events = [location.item.name for location in state.events if location.player == ctx.player_id]
-
+    ctx.log_to_tab("Available: " + str(locations_available))
     ctx.tracker_page.refresh_from_data()
     ctx.locations_available = locations
     if f"_read_hints_{ctx.team}_{ctx.slot}" in ctx.stored_data:
