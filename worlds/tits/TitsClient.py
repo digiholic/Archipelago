@@ -143,6 +143,10 @@ class TitsGameContext(CommonContext):
         self.game = ""
         await super().disconnect(allow_autoreconnect)
 
+    async def connection_closed(self):
+        await super().connection_closed()
+        await self.titsSocket.close()
+
 def request_trigger_list(id: str) -> str:
     return json.dumps({"apiName": "TITSPublicApi", "apiVersion": "1.0", "requestID": id,
                        "messageType": "TITSTriggerListRequest"})
