@@ -16,17 +16,47 @@ logger = logging.getLogger("Client")
 DEBUG = False
 ITEMS_HANDLING = 0b111
 
+trigger_ap_receive = "AP-Receive"
+trigger_ap_receive_progression = "AP-Receive-Progression"
+trigger_ap_receive_useful = "AP-Receive-Useful"
+trigger_ap_receive_filler = "AP-Receive-Filler"
+trigger_ap_receive_trap = "AP-Receive-Trap"
+trigger_ap_goal = "AP-Goal"
+trigger_ap_deathlink = "AP-Deathlink"
+
 
 class TitsCommandProcessor(ClientCommandProcessor):
     def __init__(self, ctx: TitsGameContext):
         super().__init__(ctx)
         self.ctx = ctx
 
-    def _cmd_tits_connect(self):
-        async_start(self.ctx.connect_to_api(), name="connecting to tits")
+    def _cmd_tits_connect(self, optional_port=42069):
+        """Connect to the T.I.T.S. API on a given port. If no port is provided, it will use the default port."""
+        async_start(self.ctx.connect_to_api(optional_port), name="connecting to tits")
 
     def _cmd_tits_status(self):
+        """Displays the currenct connection status and lists all found endpoint triggers"""
         self.ctx.tits_status()
+
+    def _cmd_tits_alias(self, alias=""):
+        """Specifies a name for the API call.
+        This only matters if you intend to be running multiple T.I.T.S. applications
+        and multiple T.I.T.S. Clients on the same device, and need to differentiate which ones are which."""
+        self.ctx.titsAlias = alias
+
+    def _cmd_tits_help(self):
+        """Provides information about active endpoints and how to connect."""
+        logger.info(f"This client will send the following T.I.T.S. Triggers when connected to a multiworld:")
+        logger.info(f"    - {trigger_ap_receive}:             When receiving any item")
+        logger.info(f"    - {trigger_ap_receive_progression}: When receiving a Progression item")
+        logger.info(f"    - {trigger_ap_receive_useful}:      When receiving a useful item")
+        logger.info(f"    - {trigger_ap_receive_filler}:      When receiving a filler item")
+        logger.info(f"    - {trigger_ap_receive_trap}:        When receiving a Trap")
+        logger.info(f"    - {trigger_ap_goal}:                When completing your goal")
+        logger.info(f"    - {trigger_ap_deathlink}:           When receiving a Death")
+        logger.info("")
+        logger.info(
+            "Any triggers that are not set in T.I.T.S. will be skipped. You need only implement the ones you intend to use")
 
 
 async def main(args):
@@ -39,6 +69,7 @@ async def main(args):
 
     await ctx.exit_event.wait()
     await ctx.shutdown()
+
 
 def launch():
     import colorama
@@ -61,6 +92,8 @@ class TitsGameContext(CommonContext):
     titsPort = 42069
     titsSocket = None
     titsTriggers: typing.Dict[str, str]
+    # The ID passed to the API. Only needs to change if you're controlling multiple TITS clients from the same window
+    titsAlias = "AP Tits Client"
 
     def __init__(self, server_address, password):
         super().__init__(server_address, password)
@@ -69,21 +102,30 @@ class TitsGameContext(CommonContext):
     def on_print_json(self, args: dict):
         super(TitsGameContext, self).on_print_json(args)
 
-        """
+        # If it's an Item and we're receiving it
         if args.get("type", "") == "ItemSend" and self.slot_concerns_self(args["receiving"]) \
-            and self.slot_concerns_self(args["item"].player):
-            logger.info("Receiving item!")
-            flags = [part["flags"] for part in args if "flags" in part]
-            if flags and not all(flag & 0b001 for flag in flags):
-                logger.info("Is Progressive")
-            if flags and not all(flag & 0b010 for flag in flags):
-                logger.info("Is Useful")
-            if flags and not all(flag & 0b100 for flag in flags):
-                logger.info("Is Filler")
-        # Peel apart the args and find out the item. Check its classification and send corresponding events
-        """
-        if args.get("type", "") == "ItemSend":
-            async_start(self.send_trigger(), name="Sending Throws")
+                and self.slot_concerns_self(args["item"].player):
+            async_start(self.send_trigger(trigger_ap_receive), name="Sending AP-Receive")
+
+            flags = [part["flags"] for part in args["data"] if "flags" in part]
+            if flags and all(flag == 0b001 for flag in flags):
+                async_start(self.send_trigger(trigger_ap_receive_progression), name="Sending AP-Receive-Progression")
+            if flags and all(flag == 0b010 for flag in flags):
+                async_start(self.send_trigger(trigger_ap_receive_useful), name="Sending AP-Receive-Useful")
+            if flags and all(flag == 0b100 for flag in flags):
+                async_start(self.send_trigger(trigger_ap_receive_trap), name="Sending AP-Receive-Trap")
+            if flags and all(flag == 0 for flag in flags):
+                async_start(self.send_trigger(trigger_ap_receive_filler), name="Sending AP-Receive-Filler")
+
+        # If we just goaled
+        if args.get("type", "") == "Goal" and (
+                self.slot_concerns_self(args["team"]) or self.slot_concerns_self(args["slot"])):
+            async_start(self.send_trigger(trigger_ap_goal), name="Sending AP-Goal")
+
+    def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
+        super().on_deathlink(data)
+        # We want to send a deathlink trigger regardless of who died
+        async_start(self.send_trigger(trigger_ap_deathlink), name="Sending AP-Deathlink")
 
     def tits_status(self):
         if self.titsSocket is not None:
@@ -91,10 +133,12 @@ class TitsGameContext(CommonContext):
             for name, trigger_id in self.titsTriggers.items():
                 logger.info(f"Found Trigger {name}: {trigger_id}")
 
-    async def connect_to_api(self):
+    async def connect_to_api(self, port):
         try:
-            logger.info(f"Connecting to TITS on port{self.titsPort} ")
-            self.titsSocket = await websockets.connect(f"ws://localhost:{self.titsPort}/websocket", max_size=self.max_size)
+            self.titsPort = port
+            logger.info(f"Connecting to TITS on port {self.titsPort} ")
+            self.titsSocket = await websockets.connect(f"ws://localhost:{self.titsPort}/websocket",
+                                                       max_size=self.max_size)
             await self.get_trigger_list()
 
         except Exception as e:
@@ -104,17 +148,21 @@ class TitsGameContext(CommonContext):
 
     async def get_trigger_list(self):
         if self.titsSocket is not None:
-            await self.titsSocket.send(request_trigger_list("0"))
+            await self.titsSocket.send(request_trigger_list(self.titsAlias))
             result = await self.titsSocket.recv()
             data = json.loads(result)
             # logger.info(result)
             for trigger in data["data"]["triggers"]:
-                logger.info("Found Trigger: "+trigger["name"])
+                logger.info("Found Trigger: " + trigger["name"])
                 self.titsTriggers[trigger["name"]] = trigger["ID"]
 
-    async def send_trigger(self):
+    async def send_trigger(self, trigger_name):
+        logger.debug(f"Sending T.I.T.S. Trigger {trigger_name}")
         if self.titsSocket is not None:
-            await self.titsSocket.send(activate_trigger("0", self.titsTriggers["Throw a lot of things!"]))
+            if trigger_name in self.titsTriggers:
+                await self.titsSocket.send(activate_trigger(self.titsAlias, self.titsTriggers[trigger_name]))
+            else:
+                logger.debug(f"Skipping sending T.I.T.S. Trigger {trigger_name} since no endpoint was found")
 
     def make_gui(self):
         ui = super().make_gui()
@@ -138,6 +186,7 @@ class TitsGameContext(CommonContext):
         super().on_package(cmd, args)
         if cmd == "Connected":
             self.game = self.slot_info[self.slot].game
+            async_start(self.connect_to_api(self.titsPort), name="connecting to tits")
 
     async def disconnect(self, allow_autoreconnect: bool = False):
         self.game = ""
@@ -147,9 +196,11 @@ class TitsGameContext(CommonContext):
         await super().connection_closed()
         await self.titsSocket.close()
 
+
 def request_trigger_list(id: str) -> str:
     return json.dumps({"apiName": "TITSPublicApi", "apiVersion": "1.0", "requestID": id,
                        "messageType": "TITSTriggerListRequest"})
+
 
 def activate_trigger(id: str, trigger_id: str) -> str:
     return json.dumps({"apiName": "TITSPublicApi", "apiVersion": "1.0",
