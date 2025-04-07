@@ -85,7 +85,7 @@ class TitsGameContext(CommonContext):
     from kvui import GameManager
     game = ""
     httpServer_task: typing.Optional["asyncio.Task[None]"] = None
-    tags = CommonContext.tags | {"TextOnly"}
+    tags = CommonContext.tags | {"TextOnly", "DeathLink"}
     items_handling = 0b111  # receive all items for /received
     want_slot_data = False  # Can't use game specific slot_data
     command_processor = TitsCommandProcessor
@@ -94,6 +94,7 @@ class TitsGameContext(CommonContext):
     titsTriggers: typing.Dict[str, str]
     # The ID passed to the API. Only needs to change if you're controlling multiple TITS clients from the same window
     titsAlias = "AP Tits Client"
+
 
     def __init__(self, server_address, password):
         super().__init__(server_address, password)
