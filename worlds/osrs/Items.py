@@ -8,6 +8,7 @@ class ItemRow(typing.NamedTuple):
     name: str
     amount: int
     progression: ItemClassification
+    cannonical_chunk: str|None
 
 
 class OSRSItem(Item):

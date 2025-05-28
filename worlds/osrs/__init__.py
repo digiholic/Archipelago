@@ -1,22 +1,25 @@
 import typing
 
-from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState
+from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState,Entrance
 from Fill import fill_restrictive, FillError
 from worlds.AutoWorld import WebWorld, World
 from .Items import OSRSItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
     chunksanity_special_region_names
-from .Locations import OSRSLocation, LocationRow
+from .Locations import OSRSLocation
 from .Rules import *
 from .Options import OSRSOptions, StartingArea
 from .Names import LocationNames, ItemNames, RegionNames
+from Utils import visualize_regions
 
 from .LogicCSV.LogicCSVToPython import data_csv_tag
-from .LogicCSV.items_generated import item_rows
-from .LogicCSV.locations_generated import location_rows
-from .LogicCSV.regions_generated import region_rows
-from .LogicCSV.resources_generated import resource_rows
-from .Regions import RegionRow, ResourceRow
+#from .LogicCSV.items_generated import item_rows
+#from .LogicCSV.locations_generated import location_rows
+#from .LogicCSV.regions_generated import region_rows
+#from .LogicCSV.resources_generated import resource_rows
+from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,resource_rows,rr_entrances,re_entrances,ee_entrances,rm_entrances,sub_quests,quests,non_quests,training_methods,non_monster_drops,monster_drops,mm_entrances
+from .Regions import RegionRow, ResourceRow, DropElement, MonsterRow, RuleElement, RewardElement, LocationRow, EntranceRow, TrainingRow
 
+from typing import Callable
 
 class OSRSWeb(WebWorld):
     theme = "stone"
@@ -31,6 +34,7 @@ class OSRSWeb(WebWorld):
     )
     tutorials = [setup_en]
 
+base_id = 0x070000
 
 class OSRSWorld(World):
     """
@@ -44,12 +48,12 @@ class OSRSWorld(World):
     options: OSRSOptions
     topology_present = True
     web = OSRSWeb()
-    base_id = 0x070000
+    base_id = base_id
     data_version = 1
     explicit_indirect_conditions = False
 
-    item_name_to_id = {item_rows[i].name: 0x070000 + i for i in range(len(item_rows))}
-    location_name_to_id = {location_rows[i].name: 0x070000 + i for i in range(len(location_rows))}
+    item_name_to_id = {item_rows[i].name: base_id + i for i in range(len(item_rows))}
+    location_name_to_id = {location_rows[i].name: base_id + i for i in range(len(location_rows))}
 
     region_name_to_data: typing.Dict[str, Region]
     location_name_to_data: typing.Dict[str, OSRSLocation]
@@ -57,6 +61,7 @@ class OSRSWorld(World):
     location_rows_by_name: typing.Dict[str, LocationRow]
     region_rows_by_name: typing.Dict[str, RegionRow]
     resource_rows_by_name: typing.Dict[str, ResourceRow]
+    monster_rows_by_name: typing.Dict[str, MonsterRow]
     item_rows_by_name: typing.Dict[str, ItemRow]
 
     starting_area_item: str
@@ -90,21 +95,23 @@ class OSRSWorld(World):
         self.region_rows_by_name = {reg_row.name: reg_row for reg_row in region_rows}
         self.resource_rows_by_name = {rec_row.name: rec_row for rec_row in resource_rows}
         self.item_rows_by_name = {it_row.name: it_row for it_row in item_rows}
+        self.monster_rows_by_name = {it_row.name: it_row for it_row in monster_drops}
 
         rnd = self.random
         starting_area = self.options.starting_area
+        self.starting_area_item = "Area: Lumbridge Castle"
 
         #UT specific override, if we are in normal gen, resolve starting area, we will get it from slot_data in UT
-        if not hasattr(self.multiworld, "generation_is_fake"):
-            if starting_area.value == StartingArea.option_any_bank:
-                self.starting_area_item = rnd.choice(starting_area_dict)
-            elif starting_area.value < StartingArea.option_chunksanity:
-                self.starting_area_item = starting_area_dict[starting_area.value]
-            else:
-                self.starting_area_item = rnd.choice(chunksanity_starting_chunks)
+        #if not hasattr(self.multiworld, "generation_is_fake"):
+        #    if starting_area.value == StartingArea.option_any_bank:
+        #        self.starting_area_item = rnd.choice(starting_area_dict)
+        #    elif starting_area.value < StartingArea.option_chunksanity:
+        #        self.starting_area_item = starting_area_dict[starting_area.value]
+        #    else:
+        #        self.starting_area_item = rnd.choice(chunksanity_starting_chunks)
 
             # Set Starting Chunk
-            self.multiworld.push_precollected(self.create_item(self.starting_area_item))
+        self.multiworld.push_precollected(self.create_item(self.starting_area_item))
 
     """
     This function pulls from LogicCSVToPython so that it sends the correct tag of the repository to the client.
@@ -130,6 +137,23 @@ class OSRSWorld(World):
             starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
+    def parse_rule(self, rule_element: RuleElement) -> Callable[[CollectionState], bool]:
+        if rule_element.type == "has": #literal ap item has
+            return lambda state, item_name=rule_element.value, player=self.player: state.has(item_name,player)
+        else:
+            return lambda state: True
+
+
+    def generate_lambda(self, rule_list:list[RuleElement]) -> Callable[[CollectionState], bool]:
+        if not rule_list:
+            return None #if it's empty then let AP handle the default
+        first_rule = rule_list.pop() #remove the first one
+        return_rule = self.parse_rule(first_rule)
+        for rule in rule_list:
+            return_rule = lambda state, old_rule=return_rule, new_rule=self.parse_rule(rule): old_rule(state) and new_rule(state)
+        return return_rule
+
+
     def create_regions(self) -> None:
         """
         called to place player's regions into the MultiWorld's regions list. If it's hard to separate, this can be done
@@ -140,48 +164,109 @@ class OSRSWorld(World):
         menu_region = self.create_region("Menu")
 
         for region_row in region_rows:
-            self.create_region(region_row.name)
+            self.create_region(region_row.id) #id is the name of the region, name is the name of the item that unlocks it
 
         for resource_row in resource_rows:
             self.create_region(resource_row.name)
+        
+        for monster_row in monster_drops:
+            self.create_region(monster_row.name)
 
         # Removes the word "Area: " from the item name to get the region it applies to.
         # I figured tacking "Area: " at the beginning would make it _easier_ to tell apart. Turns out it made it worse
         # if area hasn't been set, then we shouldn't connect it
         if self.starting_area_item != "":
-            if self.starting_area_item in chunksanity_special_region_names:
-                starting_area_region = chunksanity_special_region_names[self.starting_area_item]
-            else:
-                starting_area_region = self.starting_area_item[6:]  # len("Area: ")
+            starting_area_region = self.item_rows_by_name[self.starting_area_item].cannonical_chunk
             starting_entrance = menu_region.create_exit(f"Start->{starting_area_region}")
             starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
-        # Create entrances between regions
-        for region_row in region_rows:
-            region = self.region_name_to_data[region_row.name]
+        rr_entrances_cache:dict[str,Entrance] = {}
+        rr_entrances_cache_miss: list[str] = []
 
-            for outbound_region_name in region_row.connections:
-                parsed_outbound = outbound_region_name.replace('*', '')
-                entrance = region.create_exit(f"{region_row.name}->{parsed_outbound}")
-                entrance.connect(self.region_name_to_data[parsed_outbound])
+        for entrance in rr_entrances: #Region to Region connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
+            if entrance_name in rr_entrances_cache:
+                if entrance.rule:
+                    add_rule(rr_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                if entrance_name not in rr_entrances_cache_miss:
+                    rr_entrances_cache_miss.append(entrance_name)
+            else:
+                rr_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+        
+        re_entrances_cache:dict[str,Entrance] = {}
+        re_entrances_cache_miss: list[str] = []
 
-                item_name = self.region_rows_by_name[parsed_outbound].itemReq
-                entrance.access_rule = lambda state, item_name=item_name.replace("*",""): state.has(item_name, self.player)
-                generate_special_rules_for(entrance, region_row, outbound_region_name, self.player, self.options, self)
+        for entrance in re_entrances: #Region to rEsource connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
+            if entrance_name in re_entrances_cache:
+                if entrance.rule:
+                    add_rule(re_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                if entrance_name not in re_entrances_cache_miss:
+                    re_entrances_cache_miss.append(entrance_name)
+            else:
+                re_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
 
-            for resource_region in region_row.resources:
-                if not resource_region:
-                    continue
+        ee_entrances_cache:dict[str,Entrance] = {}
+        ee_entrances_cache_miss:list[str] = []
 
-                entrance = region.create_exit(f"{region_row.name}->{resource_region.replace('*', '')}")
-                if "*" not in resource_region:
-                    entrance.connect(self.region_name_to_data[resource_region])
+        for entrance in ee_entrances: #rEsource to rEsource connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
+            if entrance_name in ee_entrances_cache:
+                if entrance.rule:
+                    add_rule(ee_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                if entrance_name not in ee_entrances_cache_miss:
+                    ee_entrances_cache_miss.append(entrance_name)
+            else:
+                ee_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+
+        for entrance in rm_entrances: #Region to Monster connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            sourceRegion.connect(destRegion,None,self.generate_lambda(entrance.rule))
+
+        for entrance in mm_entrances: #Monster to Monster connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            sourceRegion.connect(destRegion,None,self.generate_lambda(entrance.rule))
+        
+        for monster in monster_drops:
+            assert isinstance(monster, MonsterRow)
+            for drop in monster.drops:
+                sourceRegion = self.region_name_to_data[monster.name]
+                dest_name = drop.dest
+                if "(noted)" in dest_name:
+                    destRegion = self.region_name_to_data[drop.dest[:-8]]
                 else:
-                    entrance.connect(self.region_name_to_data[resource_region.replace('*', '')])
-                generate_special_rules_for(entrance, region_row, resource_region, self.player, self.options, self)
+                    destRegion = self.region_name_to_data[drop.dest]
+                entrance_name = f"{sourceRegion.name} -> {dest_name}"
+                sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
 
-        self.roll_locations()
+        for non_monster in non_monster_drops:
+            assert isinstance(non_monster, MonsterRow)
+            for drop in non_monster.drops:
+                sourceRegion = self.region_name_to_data[non_monster.name]
+                dest_name = drop.dest
+                if "(noted)" in dest_name:
+                    destRegion = self.region_name_to_data[drop.dest[:-8]]
+                else:
+                    destRegion = self.region_name_to_data[drop.dest]
+                entrance_name = f"{sourceRegion.name} -> {dest_name}"
+                sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
+
+
+        for location in location_rows:
+            self.create_location(location)
+        for sub_location in sub_quests:
+            self.create_location(sub_location)
+
+        #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
 
     def task_within_skill_levels(self, skills_required):
         # Loop through each required skill. If any of its requirements are out of the defined limit, return false
@@ -296,36 +381,48 @@ class OSRSWorld(World):
         self.create_and_add_location(index)
 
     def create_items(self) -> None:
-        filler_items = []
+        itempool = []
         for item_row in item_rows:
-            if item_row.name != self.starting_area_item:
-                # If it's a filler item, set it aside for later
-                if item_row.progression == ItemClassification.filler:
-                    filler_items.append(item_row)
-                    continue
-
-                # If it starts with "Care Pack", only add it if Care Packs are enabled
-                if item_row.name.startswith("Care Pack"):
-                    if not self.options.enable_carepacks:
-                        continue
-
+            if item_row.name not in [self.starting_area_item,"Area: Nothing :(", "Area: Victory"]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
-                    self.multiworld.itempool.append(item)
-        if self.options.enable_duds:
-            self.random.shuffle(filler_items)
-            filler_items = filler_items[0:self.options.dud_count]
-            for item_row in filler_items:
-                item = self.create_item(item_row.name)
-                self.multiworld.itempool.append(item)
+                    itempool.append(item)
+
+        while len(itempool) < len(self.multiworld.get_unfilled_locations(self.player)):
+            itempool.append(self.create_filler())
+
+        self.multiworld.itempool += itempool
 
     def get_filler_item_name(self) -> str:
-        if self.options.enable_duds:
-            return self.random.choice([item for item in item_rows if item.progression == ItemClassification.filler])
+        return "Area: Nothing :("
+
+    def create_location(self, location_row:LocationRow):
+        if location_row.category == "goal" or location_row.category == "subquest":
+            location_id = None
+        elif location_row.name not in self.location_name_to_id:
+            print(location_row.name)
+            breakpoint()
         else:
-            return self.random.choice([ItemNames.Progressive_Weapons, ItemNames.Progressive_Magic,
-                                       ItemNames.Progressive_Range_Weapon, ItemNames.Progressive_Armor,
-                                       ItemNames.Progressive_Range_Armor, ItemNames.Progressive_Tools])
+            location_id = self.location_name_to_id[location_row.name]
+        location = OSRSLocation(self.player,location_row.name,location_id)
+        self.location_name_to_data[location_row.name] = location
+
+        region = self.region_name_to_data["Menu"]
+        if location_row.parent_region:
+            region = self.region_name_to_data[location_row.parent_region]
+        location.parent_region = region
+        region.locations.append(location)
+
+        if location_row.category == "subquest":
+            location.place_locked_item(self.create_event(location_row.name))
+        elif location_row.category == "quest" and location_row.quest_point_reward > 0:
+            qp_name = "Points: " + location_row.name
+            qp_loc = OSRSLocation(self.player,qp_name,None)
+            self.location_name_to_data[qp_name] = qp_loc
+            qp_loc.parent_region = region
+            qp_loc.place_locked_item(self.create_event(f"{location_row.quest_point_reward} QP ({location_row.name})"))
+            add_rule(qp_loc,lambda state, loc=location: (loc.can_reach(state)))
+            region.locations.append(qp_loc)
 
     def create_and_add_location(self, row_index) -> None:
         location_row = location_rows[row_index]
@@ -361,52 +458,12 @@ class OSRSWorld(World):
         """
         called to set access and item rules on locations and entrances.
         """
-        quest_attr_names = ["Cooks_Assistant", "Demon_Slayer", "Restless_Ghost", "Romeo_Juliet",
-                            "Sheep_Shearer", "Shield_of_Arrav", "Ernest_the_Chicken", "Vampyre_Slayer",
-                            "Imp_Catcher", "Prince_Ali_Rescue", "Dorics_Quest", "Black_Knights_Fortress",
-                            "Witchs_Potion", "Knights_Sword", "Goblin_Diplomacy", "Pirates_Treasure",
-                            "Rune_Mysteries", "Misthalin_Mystery", "Corsair_Curse", "X_Marks_the_Spot",
-                            "Below_Ice_Mountain"]
 
-        for quest_attr_name in quest_attr_names:
-            qp_loc_name = getattr(LocationNames, f"QP_{quest_attr_name}")
-            qp_loc = self.location_name_to_data.get(qp_loc_name)
-
-            q_loc_name = getattr(LocationNames, f"Q_{quest_attr_name}")
-            q_loc = self.location_name_to_data.get(q_loc_name)
-
-            # Checks to make sure the task is actually in the list before trying to create its rules
-            if qp_loc and q_loc:
-                # Create the QP Event Item
-                item_name = getattr(ItemNames, f"QP_{quest_attr_name}")
-                qp_loc.place_locked_item(self.create_event(item_name))
-
-                # If a quest is excluded, don't actually consider it for quest point progression
-                if q_loc_name not in self.options.exclude_locations:
-                    self.available_QP_locations.append(item_name)
-
-                # Set the access rule for the QP Location
-                add_rule(qp_loc, lambda state, loc=q_loc: (loc.can_reach(state)))
 
         # place "Victory" at "Dragon Slayer" and set collection as win condition
-        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
-            .place_locked_item(self.create_event("Victory"))
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
-
-        for location_name, location in self.location_name_to_data.items():
-            location_row = self.location_rows_by_name[location_name]
-            # Set up requirements for region
-            for region_required_name in location_row.regions:
-                region_required = self.region_name_to_data[region_required_name]
-                add_rule(location,
-                         lambda state, region_required=region_required: state.can_reach(region_required, "Region",
-                                                                                        self.player))
-            for skill_req in location_row.skills:
-                add_rule(location, get_skill_rule(skill_req.skill, skill_req.level, self.player, self.options))
-            for item_req in location_row.items:
-                add_rule(location, lambda state, item_req=item_req: state.has(item_req, self.player))
-            if location_row.qp:
-                add_rule(location, lambda state, location_row=location_row: self.quest_points(state) > location_row.qp)
+        self.multiworld.get_location("~|Dragon Slayer I|~ Complete the quest", self.player) \
+            .place_locked_item(self.create_item("Area: Victory"))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
 
     def create_region(self, name: str) -> "Region":
         region = Region(name, self.player, self.multiworld)
@@ -415,11 +472,13 @@ class OSRSWorld(World):
         return region
 
     def create_item(self, item_name: str) -> "Item":
-        items = [item for item in item_rows if item.name == item_name]
-        assert len(items) > 0, f"No matching item found for name {item_name} for player {self.player_name}"
-        item = items[0]
-        index = item_rows.index(item)
-        return OSRSItem(item.name, item.progression, self.base_id + index, self.player)
+        if item_name in self.item_rows_by_name:
+            item = self.item_rows_by_name[item_name]
+            item_id = None
+            if item_name in self.item_name_to_id:
+                item_id = self.item_name_to_id[item_name]
+            return OSRSItem(item.name, item.progression, item_id, self.player)
+        assert "Item wasn't able to be found :("
 
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
