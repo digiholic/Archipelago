@@ -16,7 +16,7 @@ from .LogicCSV.LogicCSVToPython import data_csv_tag
 #from .LogicCSV.locations_generated import location_rows
 #from .LogicCSV.regions_generated import region_rows
 #from .LogicCSV.resources_generated import resource_rows
-from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,resource_rows,rr_entrances,re_entrances,ee_entrances,rm_entrances,sub_quests,quests,non_quests,training_methods,non_monster_drops,monster_drops,mm_entrances
+from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,resource_rows,rr_entrances,re_entrances,ee_entrances,rm_entrances,me_entrances,sub_quests,quests,non_quests,training_methods,non_monster_drops,monster_drops,mm_entrances
 from .Regions import RegionRow, ResourceRow, DropElement, MonsterRow, RuleElement, RewardElement, LocationRow, EntranceRow, TrainingRow
 
 from typing import Callable
@@ -225,6 +225,21 @@ class OSRSWorld(World):
                     ee_entrances_cache_miss.append(entrance_name)
             else:
                 ee_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+
+        me_entrances_cache:dict[str,Entrance] = {}
+        me_entrances_cache_miss:list[str] = []
+
+        for entrance in me_entrances: #rEsource to rEsource connections
+            sourceRegion = self.region_name_to_data[entrance.source]
+            destRegion = self.region_name_to_data[entrance.dest]
+            entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
+            if entrance_name in me_entrances_cache:
+                if entrance.rule:
+                    add_rule(me_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                if entrance_name not in me_entrances_cache_miss:
+                    me_entrances_cache_miss.append(entrance_name)
+            else:
+                me_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
 
         for entrance in rm_entrances: #Region to Monster connections
             sourceRegion = self.region_name_to_data[entrance.source]
@@ -463,7 +478,7 @@ class OSRSWorld(World):
         # place "Victory" at "Dragon Slayer" and set collection as win condition
         self.multiworld.get_location("~|Dragon Slayer I|~ Complete the quest", self.player) \
             .place_locked_item(self.create_item("Area: Victory"))
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("~|Combat Achievements#Elite|~ Vardorvis Adept", self.player))
 
     def create_region(self, name: str) -> "Region":
         region = Region(name, self.player, self.multiworld)
