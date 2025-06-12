@@ -1,6 +1,7 @@
 import typing
 
 from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState,Entrance
+from rule_builder import *
 from Fill import fill_restrictive, FillError
 from worlds.AutoWorld import WebWorld, World
 from .Items import OSRSItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
@@ -36,7 +37,7 @@ class OSRSWeb(WebWorld):
 
 base_id = 0x070000
 
-class OSRSWorld(World):
+class OSRSWorld(RuleWorldMixin, World):
     """
     The best retro fantasy MMORPG on the planet. Old School is RuneScape but… older! This is the open world you know and love, but as it was in 2007.
     The Randomizer takes the form of a Chunk-Restricted f2p Ironman that takes a brand new account up through defeating
@@ -137,21 +138,21 @@ class OSRSWorld(World):
             starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
-    def parse_rule(self, rule_element: RuleElement) -> Callable[[CollectionState], bool]:
+    def parse_rule(self, rule_element: RuleElement):
         if rule_element.type == "has": #literal ap item has
-            return lambda state, item_name=rule_element.value, player=self.player: state.has(item_name,player)
+            return Has(rule_element.value)
         else:
-            return lambda state: True
+            return True_()
 
 
     def generate_lambda(self, rule_list:list[RuleElement]) -> Callable[[CollectionState], bool]:
+        output_list = []
         if not rule_list:
             return None #if it's empty then let AP handle the default
-        first_rule = rule_list.pop() #remove the first one
-        return_rule = self.parse_rule(first_rule)
         for rule in rule_list:
-            return_rule = lambda state, old_rule=return_rule, new_rule=self.parse_rule(rule): old_rule(state) and new_rule(state)
-        return return_rule
+            temp_rule = self.parse_rule(rule)
+            if temp_rule is not None: output_list.append(temp_rule)
+        return output_list
 
 
     def create_regions(self) -> None:
@@ -181,7 +182,7 @@ class OSRSWorld(World):
             starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
-        rr_entrances_cache:dict[str,Entrance] = {}
+        rr_entrances_cache:dict[str,tuple[Entrance,list]] = {}
         rr_entrances_cache_miss: list[str] = []
 
         for entrance in rr_entrances: #Region to Region connections
@@ -190,11 +191,19 @@ class OSRSWorld(World):
             entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
             if entrance_name in rr_entrances_cache:
                 if entrance.rule:
-                    add_rule(rr_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                    temp_rules = self.generate_lambda(entrance.rule)
+                    if temp_rules: rr_entrances_cache[entrance_name][1].extend(temp_rules)
                 if entrance_name not in rr_entrances_cache_miss:
                     rr_entrances_cache_miss.append(entrance_name)
             else:
-                rr_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+                temp_rules = self.generate_lambda(entrance.rule)
+                if temp_rules:
+                    rr_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),temp_rules)
+                else:
+                    rr_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),[])
+        for entrance,rules in rr_entrances_cache.values():
+            if rules:
+                self.set_rule(entrance,Or(*rules))
         
         re_entrances_cache:dict[str,Entrance] = {}
         re_entrances_cache_miss: list[str] = []
@@ -205,11 +214,19 @@ class OSRSWorld(World):
             entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
             if entrance_name in re_entrances_cache:
                 if entrance.rule:
-                    add_rule(re_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                    temp_rules = self.generate_lambda(entrance.rule)
+                    if temp_rules: re_entrances_cache[entrance_name][1].extend(temp_rules)
                 if entrance_name not in re_entrances_cache_miss:
                     re_entrances_cache_miss.append(entrance_name)
             else:
-                re_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+                temp_rules = self.generate_lambda(entrance.rule)
+                if temp_rules:
+                    re_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),temp_rules)
+                else:
+                    re_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),[])
+        for entrance,rules in re_entrances_cache.values():
+            if rules:
+                self.set_rule(entrance,Or(*rules))
 
         ee_entrances_cache:dict[str,Entrance] = {}
         ee_entrances_cache_miss:list[str] = []
@@ -220,11 +237,19 @@ class OSRSWorld(World):
             entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
             if entrance_name in ee_entrances_cache:
                 if entrance.rule:
-                    add_rule(ee_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                    temp_rules = self.generate_lambda(entrance.rule)
+                    if temp_rules: ee_entrances_cache[entrance_name][1].extend(temp_rules)
                 if entrance_name not in ee_entrances_cache_miss:
                     ee_entrances_cache_miss.append(entrance_name)
             else:
-                ee_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+                temp_rules = self.generate_lambda(entrance.rule)
+                if temp_rules:
+                    ee_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),temp_rules)
+                else:
+                    ee_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),[])
+        for entrance,rules in ee_entrances_cache.values():
+            if rules:
+                self.set_rule(entrance,Or(*rules))
 
         me_entrances_cache:dict[str,Entrance] = {}
         me_entrances_cache_miss:list[str] = []
@@ -235,21 +260,33 @@ class OSRSWorld(World):
             entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
             if entrance_name in me_entrances_cache:
                 if entrance.rule:
-                    add_rule(me_entrances_cache[entrance_name],self.generate_lambda(entrance.rule),"or")
+                    temp_rules = self.generate_lambda(entrance.rule)
+                    if temp_rules: me_entrances_cache[entrance_name][1].extend(temp_rules)
                 if entrance_name not in me_entrances_cache_miss:
                     me_entrances_cache_miss.append(entrance_name)
             else:
-                me_entrances_cache[entrance_name] = sourceRegion.connect(destRegion,entrance_name,self.generate_lambda(entrance.rule))
+                temp_rules = self.generate_lambda(entrance.rule)
+                if temp_rules:
+                    me_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),temp_rules)
+                else:
+                    me_entrances_cache[entrance_name] = (sourceRegion.connect(destRegion,entrance_name),[])
+        for entrance,rules in me_entrances_cache.values():
+            if rules:
+                self.set_rule(entrance,Or(*rules))
 
         for entrance in rm_entrances: #Region to Monster connections
             sourceRegion = self.region_name_to_data[entrance.source]
             destRegion = self.region_name_to_data[entrance.dest]
-            sourceRegion.connect(destRegion,None,self.generate_lambda(entrance.rule))
+            entrance_obj = sourceRegion.connect(destRegion,None)
+            rule = self.generate_lambda(entrance.rule)
+            if rule is not None: self.set_rule(entrance_obj,rule)
 
         for entrance in mm_entrances: #Monster to Monster connections
             sourceRegion = self.region_name_to_data[entrance.source]
             destRegion = self.region_name_to_data[entrance.dest]
-            sourceRegion.connect(destRegion,None,self.generate_lambda(entrance.rule))
+            entrance_obj = sourceRegion.connect(destRegion,None)
+            rule = self.generate_lambda(entrance.rule)
+            if rule is not None: self.set_rule(entrance_obj,rule)
         
         for monster in monster_drops:
             assert isinstance(monster, MonsterRow)
