@@ -88,6 +88,9 @@ banned_groups:list[str]=[
 ]
 
 banned_tasks:list[str]=[
+    "Cook a ~|cooked wild kebbit|~",
+
+
     "Clue nest loot","Use a ~|3rd age pickaxe|~","Make a ~|3rd age felling axe|~","Make a ~|3rd age felling axe|~ (alt)",
     "Chop with a ~|3rd age axe|~","Chop with a ~|3rd age felling axe|~","(Master Treasure Trails) Obtain a ~|ring of 3rd age|~",
     "Slay a ~|mutated terrorbird|~","Slay a ~|mutated tortoise|~","(Skilling Pets) Obtain a ~|heron|~","(All Pets) Obtain a ~|heron|~",
@@ -107,7 +110,8 @@ banned_tasks:list[str]=[
     "Wield a ~|magic comp bow|~","Wield a ~|willow comp bow|~","Wield a ~|yew comp bow|~","(All Pets) Obtain a ~|bloodhound|~",
     "(All Pets) Obtain a ~|tangleroot|~","(Skilling Pets) Obtain a ~|tangleroot|~","(Slayer) Obtain an ~|eternal gem|~","(Slayer) Obtain an ~|imbued heart|~",
     "(All Pets) Obtain a ~|moxi|~","(Amoxliatl) Obtain a ~|moxi|~","Create a saturated heart*","Wear ~|blessed dragonhide chaps|~","Wear ~|enchanted robes|~",
-    "Wear ~|robes of darkness|~","Wear ~|samurai armour|~","Craft a ~|slayer ring (eternal)|~"
+    "Wear ~|robes of darkness|~","Wear ~|samurai armour|~","Craft a ~|slayer ring (eternal)|~","Bless an ~|unholy symbol|~","Bless a ~|holy symbol|~",
+
 
 ]
 
@@ -185,6 +189,8 @@ ee_entrances: list[EntranceRow] = []
 rm_entrances: list[EntranceRow] = []
 me_entrances: list[EntranceRow] = []
 mm_entrances: list[EntranceRow] = []
+
+task_macros: dict[str,list[str]] = {}
 
 slayer_level_req: dict[str:int] = {}
 
@@ -386,6 +392,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
             ee_entrances.append(EntranceRow(sub_item,macro_name,[]))
             if sub_item not in resources and sub_item not in missing_resources:
                 missing_resources.append(sub_item)
+    for macro_name, macro_list in exportedJSON["codeItems"]["tasksPlus"].items():
+        if macro_name in banned_groups:
+            continue
+        loc_list = []
+        for loc in macro_list:
+            loc_list.append(loc)
+        task_macros[macro_name] = loc_list
     for macro_name, macro_list in exportedJSON["codeItems"]["chunksPlus"].items():
         macro_name = convert_chunk_id(macro_name)
         if macro_name not in chunks:
@@ -517,7 +530,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     category = "quest"
                 if "Tasks" in quest_data:
                     for req,req_type in quest_data["Tasks"].items():
-                        rule_list.append(RuleElement("can_reach",req))
+                        if "[+]" in req:
+                            if req not in task_macros:
+                                print(req)
+                                breakpoint()
+                            rule_list.append(RuleElement("task_macro",req))
+                        else:
+                            rule_list.append(RuleElement("task",req))
                 if "Skills" in quest_data:
                     for skill,skill_level in quest_data["Skills"].items():
                         rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
@@ -540,7 +559,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("can_reach",object))
                 if "Items" in quest_data:
                     for item in quest_data["Items"]:
-                        if "[+]" in item and not item.endswith("[+]") and not item.endswith("[+]*"):
+                        item = item.rstrip("*")
+                        if "[+]" in item and not item.endswith("[+]"):
                             try:
                                 item,_ = item.rsplit("x",1)
                             except:
@@ -553,7 +573,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         monster = convert_monster_name(monster)
                         if parent_region is None:
                             parent_region = monster
-                        rule_list.append(RuleElement("can_reach",monster))
+                        rule_list.append(RuleElement("kill",monster))
                 if "QuestPointsNeeded" in quest_data:
                     rule_list.append(RuleElement("questPoints",str(quest_data["QuestPointsNeeded"])))
                 if "KudosNeeded" in quest_data:
@@ -618,12 +638,19 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
                 if "Items" in task_data:
                     for item in task_data["Items"]:
+                        item = item.rstrip("*")
                         if parent_region is None:
                             parent_region = item
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
-                        rule_list.append(RuleElement("can_reach",req))
+                        if "[+]" in req:
+                            if req not in task_macros:
+                                print(req)
+                                breakpoint()
+                            rule_list.append(RuleElement("task_macro",req))
+                        else:
+                            rule_list.append(RuleElement("task",req))
                 if "Mix" in task_data:
                     for mix in task_data["Mix"]: #These are macros for pickpocketing EXACTLY
                         rule_list.append(RuleElement("can_reach",mix))
@@ -642,7 +669,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                                 monster_category = monster.split("#")[0] #just want the first section
                             monster_rows.append(MonsterRow(monster,monster_category,[]))
                             monster_to_find.remove(monster)
-                        rule_list.append(RuleElement("can_reach",monster))
+                        rule_list.append(RuleElement("kill",monster))
                 if "Primary" in task_data and task_data["Primary"]:
                     #primary training method
                     output = "None"
@@ -651,13 +678,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         output = task_data["Output"]
                     if "Level" in task_data:
                         level = task_data["Level"]
-                    if output in training_outputs:
+                    if output != "None" and output in training_outputs:
                         if output not in dupe_training_methods:
                             dupe_training_methods.append(output)
                         continue
                     else:
                         training_methods.append(TrainingRow(output,task_type,level,rule_list))
-                        training_outputs.append(output)
+                        if output != "None": training_outputs.append(output)
                 if task_name in non_quest_names: #have to do it down here so we can do training methods
                     if task_name not in non_quest_dupes:
                         non_quest_dupes.append(task_name)
@@ -737,14 +764,26 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
                 if "Items" in task_data:
                     for item in task_data["Items"]:
+                        item = item.rstrip("*")
                         if parent_region is None:
                             parent_region = item
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
-                        if "[+]" in req and not req.endswith("[+]"):
-                            req,_ = req.rsplit("x",1)
-                        rule_list.append(RuleElement("can_reach",req))
+                        if "[+]" in req:
+                            if not req.endswith("[+]"):
+                                req,count = req.rsplit("x",1)
+                                if req not in task_macros:
+                                    print(req)
+                                    breakpoint()
+                                rule_list.append(RuleElement("task_macrox",req+count))
+                            else:
+                                if req not in task_macros:
+                                    print(req)
+                                    breakpoint()
+                                rule_list.append(RuleElement("task_macro",req))
+                        else:
+                            rule_list.append(RuleElement("task",req))
                 if "Monsters" in task_data:
                     for monster in task_data["Monsters"]:
                         monster = convert_monster_name(monster)
@@ -756,7 +795,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                                 monster_category = monster.split("#")[0] #just want the first section
                             monster_rows.append(MonsterRow(monster,monster_category,[]))
                             monster_to_find.remove(monster)
-                        rule_list.append(RuleElement("can_reach",monster))
+                        rule_list.append(RuleElement("kill",monster))
                 if "QuestPointsNeeded" in task_data:
                     rule_list.append(RuleElement("questPoints",str(task_data["QuestPointsNeeded"])))
                 #todo: TotalLevelNeeded

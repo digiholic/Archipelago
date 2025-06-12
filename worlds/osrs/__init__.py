@@ -141,18 +141,26 @@ class OSRSWorld(RuleWorldMixin, World):
     def parse_rule(self, rule_element: RuleElement):
         if rule_element.type == "has": #literal ap item has
             return Has(rule_element.value)
+        elif rule_element.type == "task":
+            return CanReachLocation(rule_element.value)
+        #elif rule_element.type == "chunk":
+        #    return CanReachRegion(rule_element.value)
+        #elif rule_element.type == "can_reach":
+        #    return CanReachRegion(rule_element.value)
+        #elif rule_element.type == "kill":
+        #    return CanReachRegion(rule_element.value)
         else:
             return True_()
 
 
-    def generate_lambda(self, rule_list:list[RuleElement]) -> Callable[[CollectionState], bool]:
+    def generate_lambda(self, rule_list:list[RuleElement]):
         output_list = []
         if not rule_list:
             return None #if it's empty then let AP handle the default
         for rule in rule_list:
             temp_rule = self.parse_rule(rule)
             if temp_rule is not None: output_list.append(temp_rule)
-        return output_list
+        return [And(*output_list)]
 
 
     def create_regions(self) -> None:
@@ -182,6 +190,15 @@ class OSRSWorld(RuleWorldMixin, World):
             starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
+
+        for location in location_rows:
+            self.create_location(location)
+        for sub_location in sub_quests:
+            self.create_location(sub_location)
+
+        #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
+    
+    def set_rules(self):
         rr_entrances_cache:dict[str,tuple[Entrance,list]] = {}
         rr_entrances_cache_miss: list[str] = []
 
@@ -312,13 +329,17 @@ class OSRSWorld(RuleWorldMixin, World):
                 entrance_name = f"{sourceRegion.name} -> {dest_name}"
                 sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
 
+        for location_row in location_rows:
+            if location_row.rule:
+                location = self.multiworld.get_location(location_row.name,self.player)
+                rules = self.generate_lambda(location_row.rule)
+                if rules:
+                    self.set_rule(location,Or(*rules))
 
-        for location in location_rows:
-            self.create_location(location)
-        for sub_location in sub_quests:
-            self.create_location(sub_location)
-
-        #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
+        # place "Victory" at "Dragon Slayer" and set collection as win condition
+        self.multiworld.get_location("~|Dragon Slayer I|~ Complete the quest", self.player) \
+            .place_locked_item(self.create_item("Area: Victory"))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("~|Combat Achievements#Elite|~ Vardorvis Adept", self.player))
 
     def task_within_skill_levels(self, skills_required):
         # Loop through each required skill. If any of its requirements are out of the defined limit, return false
@@ -435,7 +456,7 @@ class OSRSWorld(RuleWorldMixin, World):
     def create_items(self) -> None:
         itempool = []
         for item_row in item_rows:
-            if item_row.name not in [self.starting_area_item,"Area: Nothing :(", "Area: Victory"]:
+            if item_row.name not in [self.starting_area_item]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
                     itempool.append(item)
@@ -505,17 +526,6 @@ class OSRSWorld(RuleWorldMixin, World):
             self.location_name_to_data[points_name] = points_location
             points_location.parent_region = region
             region.locations.append(points_location)
-
-    def set_rules(self) -> None:
-        """
-        called to set access and item rules on locations and entrances.
-        """
-
-
-        # place "Victory" at "Dragon Slayer" and set collection as win condition
-        self.multiworld.get_location("~|Dragon Slayer I|~ Complete the quest", self.player) \
-            .place_locked_item(self.create_item("Area: Victory"))
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("~|Combat Achievements#Elite|~ Vardorvis Adept", self.player))
 
     def create_region(self, name: str) -> "Region":
         region = Region(name, self.player, self.multiworld)
