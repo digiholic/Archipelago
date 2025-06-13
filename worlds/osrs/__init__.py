@@ -143,14 +143,14 @@ class OSRSWorld(RuleWorldMixin, World):
             return Has(rule_element.value)
         elif rule_element.type == "task":
             return CanReachLocation(rule_element.value)
-        #elif rule_element.type == "chunk":
-        #    return CanReachRegion(rule_element.value)
-        #elif rule_element.type == "can_reach":
-        #    return CanReachRegion(rule_element.value)
-        #elif rule_element.type == "kill":
-        #    return CanReachRegion(rule_element.value)
+        elif rule_element.type == "chunk":
+            return CanReachRegion(rule_element.value)
+        elif rule_element.type == "can_reach":
+            return CanReachRegion(rule_element.value)
+        elif rule_element.type == "kill":
+            return CanReachRegion(rule_element.value)
         else:
-            return True_()
+            return None
 
 
     def generate_lambda(self, rule_list:list[RuleElement]):
@@ -160,7 +160,10 @@ class OSRSWorld(RuleWorldMixin, World):
         for rule in rule_list:
             temp_rule = self.parse_rule(rule)
             if temp_rule is not None: output_list.append(temp_rule)
-        return [And(*output_list)]
+        if output_list:
+            return [And(*output_list)]
+        else:
+            return None #if there's no valid rules, just let the default rule take over
 
 
     def create_regions(self) -> None:
@@ -330,6 +333,12 @@ class OSRSWorld(RuleWorldMixin, World):
                 sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
 
         for location_row in location_rows:
+            if location_row.rule:
+                location = self.multiworld.get_location(location_row.name,self.player)
+                rules = self.generate_lambda(location_row.rule)
+                if rules:
+                    self.set_rule(location,Or(*rules))
+        for location_row in sub_quests:
             if location_row.rule:
                 location = self.multiworld.get_location(location_row.name,self.player)
                 rules = self.generate_lambda(location_row.rule)

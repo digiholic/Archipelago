@@ -111,6 +111,14 @@ banned_tasks:list[str]=[
     "(All Pets) Obtain a ~|tangleroot|~","(Skilling Pets) Obtain a ~|tangleroot|~","(Slayer) Obtain an ~|eternal gem|~","(Slayer) Obtain an ~|imbued heart|~",
     "(All Pets) Obtain a ~|moxi|~","(Amoxliatl) Obtain a ~|moxi|~","Create a saturated heart*","Wear ~|blessed dragonhide chaps|~","Wear ~|enchanted robes|~",
     "Wear ~|robes of darkness|~","Wear ~|samurai armour|~","Craft a ~|slayer ring (eternal)|~","Bless an ~|unholy symbol|~","Bless a ~|holy symbol|~",
+    "Build a ~|Trailblazer globe (Construction)|~","Build a ~|Trailblazer rug|~","~|STASH#Hard|~: North-east corner of the Kharazi Jungle",
+    "~|STASH#Hard|~: In the middle of Jiggig","~|STASH#Hard|~: Volcano in the north-eastern Wilderness","~|STASH#Hard|~: Agility Pyramid",
+    "~|STASH#Elite|~: Entrance of the cavern under the whirlpool","~|STASH#Elite|~: Shayzien War Tent","~|STASH#Elite|~: Entrance of the cave of Damis",
+    "~|STASH#Elite|~: South-east corner of the Monastery","~|STASH#Master|~: On top of the Northern wall of Castle Drakan","~|STASH#Master|~: Outside K'ril Tsutsaroth's room",
+    "~|STASH#Master|~: Outside the Wilderness axe hut","~|STASH#Master|~: Outside the Mudknuckles' hut","~|STASH#Master|~: King Black Dragon's lair",
+    "Armour Case: ~|Giant stopwatch|~","Magic Wardrobe: ~|Dark infinity hat|~","Magic Wardrobe: ~|Dark infinity top|~","Magic Wardrobe: ~|Dark infinity bottoms|~",
+    "Magic Wardrobe: ~|Light infinity hat|~","Magic Wardrobe: ~|Light infinity top|~","Magic Wardrobe: ~|Light infinity bottoms|~","Magic Wardrobe: ~|Mystic hat (or)|~",
+    "Magic Wardrobe: ~|Mystic robe top (or)|~","Magic Wardrobe: ~|Mystic robe bottom (or)|~","Magic Wardrobe: ~|Mystic gloves (or)|~","Magic Wardrobe: ~|Mystic boots (or)|~",
 
 
 ]
@@ -200,6 +208,8 @@ non_monster_rows: list[MonsterRow] = []
 defered_region_connections: list[tuple[str,str]] = []
 
 # todo : fix this later but for now have some manually placed entrances
+
+monster_rows.append(MonsterRow("kill_Monster[+]","Macro",[]))
 
 ee_entrances.append(EntranceRow("Seed[+]","Hespori seed",[]))
 resources.append("Hespori seed")
@@ -312,6 +322,7 @@ def chunk_init(chunk_name,chunk_id,chunk):
             if not monster in monsters:
                 monsters.append(monster)
                 monster_to_find.append(monster)
+                mm_entrances.append(EntranceRow(monster,"kill_Monster[+]",[]))
             chunk["Contents"].append(monster)
             rm_entrances.append(EntranceRow(chunk_id,monster,[]))
     if "NPC" in chunk:
@@ -544,9 +555,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     for chunk in quest_data["Chunks"]:
                         if "[+]" in chunk and not chunk.endswith("[+]"):
                             chunk,_ = chunk.rsplit("x",1)
+                        chunk = convert_chunk_id(chunk)
+                        if chunk not in chunks:
+                            chunk = chunk+"-1"
+                            if chunk not in chunks:
+                                print(chunk[:-2])
+                                breakpoint()
                         if parent_region is None:
-                            parent_region = convert_chunk_id(chunk)
-                        rule_list.append(RuleElement("chunk",convert_chunk_id(chunk)))
+                            parent_region = chunk
+                        rule_list.append(RuleElement("chunk",chunk))
                 if "NPCs" in quest_data:
                     for npc in quest_data["NPCs"]:
                         if parent_region is None:
@@ -596,6 +613,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 #todo CombatPoints
                 if parent_region:
                     parent_region = parent_region.rstrip("*")
+                    rule_list = [value for value in rule_list if value.value != parent_region]
                 target_list.append(LocationRow(quest_name,category,parent_region,rule_list,kudos_reward,quest_point_reward))
                 for field in quest_data.keys():
                     if field not in [
@@ -618,9 +636,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 rule_list = []
                 if "Chunks" in task_data:
                     for chunk in task_data["Chunks"]:
+                        chunk = convert_chunk_id(chunk)
+                        if chunk not in chunks:
+                            chunk = chunk+"-1"
+                            if chunk not in chunks:
+                                print(chunk[:-2])
+                                breakpoint()
                         if parent_region is None:
-                            parent_region = convert_chunk_id(chunk)
-                        rule_list.append(RuleElement("chunk",convert_chunk_id(chunk)))
+                            parent_region = chunk
+                        rule_list.append(RuleElement("chunk",chunk))
                 if "NPCs" in task_data:
                     for npc in task_data["NPCs"]:
                         if parent_region is None:
@@ -713,6 +737,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     re_entrances.append(EntranceRow("Menu",output_obj,rule_list))
                 if parent_region:
                     parent_region = parent_region.rstrip("*")
+                    rule_list = [value for value in rule_list if value.value != parent_region]
                 non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,0,0))
                 non_quest_names.append(task_name)
                 for field in task_data.keys():
@@ -746,9 +771,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     continue #I don't actually know what these are for so right now we're ignoring them
                 if "Chunks" in task_data:
                     for chunk in task_data["Chunks"]:
+                        chunk = convert_chunk_id(chunk)
+                        if chunk not in chunks:
+                            chunk = chunk+"-1"
+                            if chunk not in chunks:
+                                print(chunk[:-2])
+                                breakpoint()
                         if parent_region is None:
-                            parent_region = convert_chunk_id(chunk)
-                        rule_list.append(RuleElement("chunk",convert_chunk_id(chunk)))
+                            parent_region = chunk
+                        rule_list.append(RuleElement("chunk",chunk))
                 if "NPCs" in task_data:
                     for npc in task_data["NPCs"]:
                         if parent_region is None:
@@ -880,6 +911,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "ConnectsSections" not in task_data and "UnlocksArea" not in task_data: #don't make these as locations
                     if parent_region:
                         parent_region = parent_region.rstrip("*")
+                        rule_list = [value for value in rule_list if value.value != parent_region]
                     non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,kudos_reward,0))
                     non_quest_names.append(task_name)
                 for field in task_data.keys():
