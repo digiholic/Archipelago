@@ -3,9 +3,9 @@ import itertools
 import operator
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Literal, cast
 
-from typing_extensions import Never, Self, dataclass_transform, override
+from typing_extensions import Never, Self, TypeVar, dataclass_transform, override
 
 from BaseClasses import Entrance
 
@@ -76,6 +76,118 @@ class RuleWorldMixin(World):
             self.register_rule_connections(resolved_rule, entrance)
         return entrance
 
+    def simplify_rule(self, rule: "Rule.Resolved") -> "Rule.Resolved":
+        if isinstance(rule, And.Resolved):
+            return self._simplify_and(rule)
+        if isinstance(rule, Or.Resolved):
+            return self._simplify_or(rule)
+        return rule
+
+    def _simplify_and(self, rule: "And.Resolved") -> "Rule.Resolved":
+        children_to_process = list(rule.children)
+        clauses: list[Rule.Resolved] = []
+        items: dict[str, int] = {}
+        true_rule: Rule.Resolved | None = None
+
+        while children_to_process:
+            child = children_to_process.pop(0)
+            if child.always_false:
+                # false always wins
+                return child
+            if child.always_true:
+                # dedupe trues
+                true_rule = child
+                continue
+            if isinstance(child, And.Resolved):
+                children_to_process.extend(child.children)
+                continue
+
+            if isinstance(child, Has.Resolved):
+                if child.item_name not in items or items[child.item_name] < child.count:
+                    items[child.item_name] = child.count
+            elif isinstance(child, HasAll.Resolved):
+                for item in child.item_names:
+                    if item not in items:
+                        items[item] = 1
+            else:
+                clauses.append(child)
+
+        if not clauses and not items:
+            return true_rule or False_.Resolved(player=rule.player)
+
+        has_cls = cast("type[Has[Self]]", self.get_rule_cls("Has"))
+        has_all_cls = cast("type[HasAll[Self]]", self.get_rule_cls("HasAll"))
+        has_all_items: list[str] = []
+        for item, count in items.items():
+            if count == 1:
+                has_all_items.append(item)
+            else:
+                clauses.append(has_cls.Resolved(item, count, player=rule.player))
+
+        if len(has_all_items) == 1:
+            clauses.append(has_cls.Resolved(has_all_items[0], player=rule.player))
+        elif len(has_all_items) > 1:
+            clauses.append(has_all_cls.Resolved(tuple(has_all_items), player=rule.player))
+
+        if len(clauses) == 1:
+            return clauses[0]
+        return And.Resolved(
+            tuple(clauses),
+            player=rule.player,
+            cacheable=rule.cacheable and all(c.cacheable for c in clauses),
+        )
+
+    def _simplify_or(self, rule: "Or.Resolved") -> "Rule.Resolved":
+        children_to_process = list(rule.children)
+        clauses: list[Rule.Resolved] = []
+        items: dict[str, int] = {}
+
+        while children_to_process:
+            child = children_to_process.pop(0)
+            if child.always_true:
+                # true always wins
+                return child
+            if child.always_false:
+                # falses can be ignored
+                continue
+            if isinstance(child, Or.Resolved):
+                children_to_process.extend(child.children)
+                continue
+
+            if isinstance(child, Has.Resolved):
+                if child.item_name not in items or child.count < items[child.item_name]:
+                    items[child.item_name] = child.count
+            elif isinstance(child, HasAny.Resolved):
+                for item in child.item_names:
+                    items[item] = 1
+            else:
+                clauses.append(child)
+
+        if not clauses and not items:
+            return False_.Resolved(player=rule.player)
+
+        has_cls = cast("type[Has[Self]]", self.get_rule_cls("Has"))
+        has_any_cls = cast("type[HasAny[Self]]", self.get_rule_cls("HasAny"))
+        has_any_items: list[str] = []
+        for item, count in items.items():
+            if count == 1:
+                has_any_items.append(item)
+            else:
+                clauses.append(has_cls.Resolved(item, count, player=rule.player))
+
+        if len(has_any_items) == 1:
+            clauses.append(has_cls.Resolved(has_any_items[0], player=rule.player))
+        elif len(has_any_items) > 1:
+            clauses.append(has_any_cls.Resolved(tuple(has_any_items), player=rule.player))
+
+        if len(clauses) == 1:
+            return clauses[0]
+        return Or.Resolved(
+            tuple(clauses),
+            player=rule.player,
+            cacheable=rule.cacheable and all(c.cacheable for c in clauses),
+        )
+
     @override
     def collect(self, state: "CollectionState", item: "Item") -> bool:
         changed = super().collect(state, item)
@@ -95,7 +207,7 @@ class RuleWorldMixin(World):
         return changed
 
 
-TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True)  # noqa: PLC0105
+TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True, default=RuleWorldMixin)  # noqa: PLC0105
 
 
 @dataclass_transform()
@@ -229,6 +341,9 @@ class Rule(Generic[TWorld]):
         cacheable: bool = dataclasses.field(repr=False, default=True)
         """If this rule should be cached in the state"""
 
+        rule_name: ClassVar[str] = "Rule"
+        """The name of this rule for hashing purposes"""
+
         always_true: ClassVar[bool] = False
         """Whether this rule always evaluates to True, used to short-circuit logic"""
 
@@ -240,7 +355,7 @@ class Rule(Generic[TWorld]):
             return hash(
                 (
                     self.__class__.__module__,
-                    self.__class__.__name__,
+                    self.rule_name,
                     *[getattr(self, f.name) for f in dataclasses.fields(self)],
                 )
             )
@@ -294,6 +409,7 @@ class True_(Rule[TWorld]):
     class Resolved(Rule.Resolved):
         cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
         always_true: ClassVar[bool] = True
+        rule_name: ClassVar[str] = "True_"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -307,6 +423,10 @@ class True_(Rule[TWorld]):
         def __str__(self) -> str:
             return "True"
 
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
+
 
 @dataclasses.dataclass()
 class False_(Rule[TWorld]):
@@ -316,6 +436,7 @@ class False_(Rule[TWorld]):
     class Resolved(Rule.Resolved):
         cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
         always_false: ClassVar[bool] = True
+        rule_name: ClassVar[str] = "False_"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -329,6 +450,10 @@ class False_(Rule[TWorld]):
         def __str__(self) -> str:
             return "False"
 
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
+
 
 @dataclasses.dataclass(init=False)
 class NestedRule(Rule[TWorld]):
@@ -341,7 +466,7 @@ class NestedRule(Rule[TWorld]):
     @override
     def _instantiate(self, world: "TWorld") -> "Rule.Resolved":
         children = [c.resolve(world) for c in self.children]
-        return self.Resolved(tuple(children), player=world.player).simplify()
+        return world.simplify_rule(self.Resolved(tuple(children), player=world.player))
 
     @override
     def to_json(self) -> Mapping[str, Any]:
@@ -365,6 +490,7 @@ class NestedRule(Rule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         children: "tuple[Rule.Resolved, ...]"
+        rule_name: ClassVar[str] = "NestedRule"
 
         @override
         def item_dependencies(self) -> dict[str, set[int]]:
@@ -381,14 +507,17 @@ class NestedRule(Rule[TWorld]):
         def indirect_regions(self) -> tuple[str, ...]:
             return tuple(itertools.chain.from_iterable(child.indirect_regions() for child in self.children))
 
-        def simplify(self) -> "Rule.Resolved":
-            return self
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 @dataclasses.dataclass(init=False)
 class And(NestedRule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(NestedRule.Resolved):
+        rule_name: ClassVar[str] = "And"
+
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             for rule in self.children:
@@ -417,63 +546,16 @@ class And(NestedRule[TWorld]):
             return f"({clauses})"
 
         @override
-        def simplify(self) -> "Rule.Resolved":
-            children_to_process = list(self.children)
-            clauses: list[Rule.Resolved] = []
-            items: dict[str, int] = {}
-            true_rule: Rule.Resolved | None = None
-
-            while children_to_process:
-                child = children_to_process.pop(0)
-                if child.always_false:
-                    # false always wins
-                    return child
-                if child.always_true:
-                    # dedupe trues
-                    true_rule = child
-                    continue
-                if isinstance(child, And.Resolved):
-                    children_to_process.extend(child.children)
-                    continue
-
-                if isinstance(child, Has.Resolved):
-                    if child.item_name not in items or items[child.item_name] < child.count:
-                        items[child.item_name] = child.count
-                elif isinstance(child, HasAll.Resolved):
-                    for item in child.item_names:
-                        if item not in items:
-                            items[item] = 1
-                else:
-                    clauses.append(child)
-
-            if not clauses and not items:
-                return true_rule or False_.Resolved(player=self.player)
-
-            has_all_items: list[str] = []
-            for item, count in items.items():
-                if count == 1:
-                    has_all_items.append(item)
-                else:
-                    clauses.append(Has.Resolved(item, count, player=self.player))
-
-            if len(has_all_items) == 1:
-                clauses.append(Has.Resolved(has_all_items[0], player=self.player))
-            elif len(has_all_items) > 1:
-                clauses.append(HasAll.Resolved(tuple(has_all_items), player=self.player))
-
-            if len(clauses) == 1:
-                return clauses[0]
-            return And.Resolved(
-                tuple(clauses),
-                player=self.player,
-                cacheable=self.cacheable and all(c.cacheable for c in clauses),
-            )
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 @dataclasses.dataclass(init=False)
 class Or(NestedRule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(NestedRule.Resolved):
+        rule_name: ClassVar[str] = "Or"
+
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             for rule in self.children:
@@ -502,54 +584,78 @@ class Or(NestedRule[TWorld]):
             return f"({clauses})"
 
         @override
-        def simplify(self) -> "Rule.Resolved":
-            children_to_process = list(self.children)
-            clauses: list[Rule.Resolved] = []
-            items: dict[str, int] = {}
+        def __hash__(self) -> int:
+            return super().__hash__()
 
-            while children_to_process:
-                child = children_to_process.pop(0)
-                if child.always_true:
-                    # true always wins
-                    return child
-                if child.always_false:
-                    # falses can be ignored
-                    continue
-                if isinstance(child, Or.Resolved):
-                    children_to_process.extend(child.children)
-                    continue
 
-                if isinstance(child, Has.Resolved):
-                    if child.item_name not in items or child.count < items[child.item_name]:
-                        items[child.item_name] = child.count
-                elif isinstance(child, HasAny.Resolved):
-                    for item in child.item_names:
-                        items[item] = 1
-                else:
-                    clauses.append(child)
+@dataclasses.dataclass()
+class Wrapper(Rule[TWorld]):
+    """A rule that wraps another rule to provide extra logic or data"""
 
-            if not clauses and not items:
-                return False_.Resolved(player=self.player)
+    child: "Rule[TWorld]"
 
-            has_any_items: list[str] = []
-            for item, count in items.items():
-                if count == 1:
-                    has_any_items.append(item)
-                else:
-                    clauses.append(Has.Resolved(item, count, player=self.player))
+    @override
+    def _instantiate(self, world: "TWorld") -> "Rule.Resolved":
+        return self.Resolved(self.child.resolve(world), player=world.player)
 
-            if len(has_any_items) == 1:
-                clauses.append(Has.Resolved(has_any_items[0], player=self.player))
-            elif len(has_any_items) > 1:
-                clauses.append(HasAny.Resolved(tuple(has_any_items), player=self.player))
+    @override
+    def to_json(self) -> Mapping[str, Any]:
+        return {
+            "rule": self.__class__.__name__,
+            "options": self.options,
+            "child": self.child.to_json(),
+        }
 
-            if len(clauses) == 1:
-                return clauses[0]
-            return Or.Resolved(
-                tuple(clauses),
-                player=self.player,
-                cacheable=self.cacheable and all(c.cacheable for c in clauses),
-            )
+    @override
+    @classmethod
+    def from_json(cls, data: Mapping[str, Any]) -> Self:
+        child = data.get("child")
+        if child is None:
+            raise ValueError("Child rule cannot be None")
+        return cls(child, options=data.get("options", ()))
+
+    @override
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}[{self.child}]"
+
+    @dataclasses.dataclass(frozen=True)
+    class Resolved(Rule.Resolved):
+        child: "Rule.Resolved"
+        rule_name: ClassVar[str] = "Wrapper"
+
+        @override
+        def _evaluate(self, state: "CollectionState") -> bool:
+            return self.child._evaluate(state)
+
+        @override
+        def item_dependencies(self) -> dict[str, set[int]]:
+            deps: dict[str, set[int]] = {}
+            for item_name, rules in self.child.item_dependencies().items():
+                deps[item_name] = {id(self), *rules}
+            return deps
+
+        @override
+        def indirect_regions(self) -> tuple[str, ...]:
+            return self.child.indirect_regions()
+
+        @override
+        def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
+            messages: "list[JSONMessagePart]" = [{"type": "text", "text": f"{self.__class__.__name__} ["}]
+            messages.extend(self.child.explain_json(state))
+            messages.append({"type": "text", "text": "]"})
+            return messages
+
+        @override
+        def explain_str(self, state: "CollectionState | None" = None) -> str:
+            return f"{self.__class__.__name__}[{self.child.explain_str(state)}]"
+
+        @override
+        def __str__(self) -> str:
+            return f"{self.__class__.__name__}[{self.child}]"
+
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 @dataclasses.dataclass()
@@ -571,6 +677,7 @@ class Has(Rule[TWorld]):
     class Resolved(Rule.Resolved):
         item_name: str
         count: int = 1
+        rule_name: ClassVar[str] = "Has"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -602,6 +709,10 @@ class Has(Rule[TWorld]):
             count = f"{self.count}x " if self.count > 1 else ""
             return f"Has {count}{self.item_name}"
 
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
+
 
 @dataclasses.dataclass(init=False)
 class HasAll(Rule[TWorld]):
@@ -631,6 +742,7 @@ class HasAll(Rule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         item_names: tuple[str, ...]
+        rule_name: ClassVar[str] = "HasAll"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -663,12 +775,17 @@ class HasAll(Rule[TWorld]):
             prefix = "Has all" if self.test(state) else "Missing some"
             found_str = f"Found: {', '.join(found)}" if found else ""
             missing_str = f"Missing: {', '.join(missing)}" if missing else ""
-            return f"{prefix} of ({found_str}{missing_str})"
+            infix = "; " if found and missing else ""
+            return f"{prefix} of ({found_str}{infix}{missing_str})"
 
         @override
         def __str__(self) -> str:
             items = ", ".join(self.item_names)
             return f"Has all of ({items})"
+
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 @dataclasses.dataclass()
@@ -699,6 +816,7 @@ class HasAny(Rule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         item_names: tuple[str, ...]
+        rule_name: ClassVar[str] = "HasAny"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -731,12 +849,17 @@ class HasAny(Rule[TWorld]):
             prefix = "Has some" if self.test(state) else "Missing all"
             found_str = f"Found: {', '.join(found)}" if found else ""
             missing_str = f"Missing: {', '.join(missing)}" if missing else ""
-            return f"{prefix} of ({found_str}{missing_str})"
+            infix = "; " if found and missing else ""
+            return f"{prefix} of ({found_str}{infix}{missing_str})"
 
         @override
         def __str__(self) -> str:
             items = ", ".join(self.item_names)
             return f"Has all of ({items})"
+
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 @dataclasses.dataclass()
@@ -772,6 +895,7 @@ class CanReachLocation(Rule[TWorld]):
         location_name: str
         parent_region_name: str
         cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
+        rule_name: ClassVar[str] = "CanReachLocation"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -801,6 +925,10 @@ class CanReachLocation(Rule[TWorld]):
         def __str__(self) -> str:
             return f"Can reach location {self.location_name}"
 
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
+
 
 @dataclasses.dataclass()
 class CanReachRegion(Rule[TWorld]):
@@ -819,6 +947,7 @@ class CanReachRegion(Rule[TWorld]):
     class Resolved(Rule.Resolved):
         region_name: str
         cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
+        rule_name: ClassVar[str] = "CanReachRegion"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -846,6 +975,10 @@ class CanReachRegion(Rule[TWorld]):
         def __str__(self) -> str:
             return f"Can reach region {self.region_name}"
 
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
+
 
 @dataclasses.dataclass()
 class CanReachEntrance(Rule[TWorld]):
@@ -864,6 +997,7 @@ class CanReachEntrance(Rule[TWorld]):
     class Resolved(Rule.Resolved):
         entrance_name: str
         cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
+        rule_name: ClassVar[str] = "CanReachEntrance"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -886,6 +1020,10 @@ class CanReachEntrance(Rule[TWorld]):
         @override
         def __str__(self) -> str:
             return f"Can reach entrance {self.entrance_name}"
+
+        @override
+        def __hash__(self) -> int:
+            return super().__hash__()
 
 
 DEFAULT_RULES = {
