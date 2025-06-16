@@ -122,12 +122,12 @@ class RuleWorldMixin(World):
             if count == 1:
                 has_all_items.append(item)
             else:
-                clauses.append(has_cls.Resolved(item, count, player=rule.player))
+                clauses.append(self.resolve_rule(has_cls(item, count)))
 
         if len(has_all_items) == 1:
-            clauses.append(has_cls.Resolved(has_all_items[0], player=rule.player))
+            clauses.append(self.resolve_rule(has_cls(has_all_items[0])))
         elif len(has_all_items) > 1:
-            clauses.append(has_all_cls.Resolved(tuple(has_all_items), player=rule.player))
+            clauses.append(self.resolve_rule(has_all_cls(*has_all_items)))
 
         if len(clauses) == 1:
             return clauses[0]
@@ -173,12 +173,12 @@ class RuleWorldMixin(World):
             if count == 1:
                 has_any_items.append(item)
             else:
-                clauses.append(has_cls.Resolved(item, count, player=rule.player))
+                clauses.append(self.resolve_rule(has_cls(item, count)))
 
         if len(has_any_items) == 1:
-            clauses.append(has_cls.Resolved(has_any_items[0], player=rule.player))
+            clauses.append(self.resolve_rule(has_cls(has_any_items[0])))
         elif len(has_any_items) > 1:
-            clauses.append(has_any_cls.Resolved(tuple(has_any_items), player=rule.player))
+            clauses.append(self.resolve_rule(has_any_cls(*has_any_items)))
 
         if len(clauses) == 1:
             return clauses[0]
@@ -465,7 +465,7 @@ class NestedRule(Rule[TWorld]):
 
     @override
     def _instantiate(self, world: "TWorld") -> "Rule.Resolved":
-        children = [c.resolve(world) for c in self.children]
+        children = [world.resolve_rule(c) for c in self.children]
         return world.simplify_rule(self.Resolved(tuple(children), player=world.player))
 
     @override
@@ -517,6 +517,16 @@ class And(NestedRule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(NestedRule.Resolved):
         rule_name: ClassVar[str] = "And"
+        @override
+        def item_dependencies(self) -> dict[str, set[int]]:
+            combined_deps: dict[str, set[int]] = {}
+            for child in self.children:
+                for item_name, rules in child.item_dependencies().items():
+                    if item_name in combined_deps:
+                        combined_deps[item_name] |= rules
+                    else:
+                        combined_deps[item_name] = {id(self), *rules}
+            return combined_deps
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -555,6 +565,16 @@ class Or(NestedRule[TWorld]):
     @dataclasses.dataclass(frozen=True)
     class Resolved(NestedRule.Resolved):
         rule_name: ClassVar[str] = "Or"
+        @override
+        def item_dependencies(self) -> dict[str, set[int]]:
+            combined_deps: dict[str, set[int]] = {}
+            for child in self.children:
+                for item_name, rules in child.item_dependencies().items():
+                    if item_name in combined_deps:
+                        combined_deps[item_name] |= rules
+                    else:
+                        combined_deps[item_name] = {id(self), *rules}
+            return combined_deps
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
