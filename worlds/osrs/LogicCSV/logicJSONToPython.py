@@ -632,6 +632,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
             for task_name, task_data in task_list.items():
                 if task_name in banned_tasks:
                     continue
+                if "Category" in task_data and "Quest Skill Reqs" in task_data["Category"]:
+                    continue #these aren't real, and aren't needed
                 parent_region = None
                 rule_list = []
                 if "Chunks" in task_data:
