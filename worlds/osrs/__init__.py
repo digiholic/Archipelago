@@ -334,14 +334,15 @@ class OSRSWorld(RuleWorldMixin, World):
         for location_row in location_rows:
             if location_row.rule:
                 location = self.multiworld.get_location(location_row.name,self.player)
+                fake_location = self.multiworld.get_location(location_row.name+" event",self.player)
                 rule = self.generate_lambda(location_row.rule)
                 if rule is not None:
                     self.set_rule(location,rule)
-                    fake_location = self.multiworld.get_location(location_row.name+" event",self.player)
-                    fake_location.access_rule = location.access_rule
-                    if location_row.category == "quest" and location_row.quest_point_reward > 0:
-                        qp_loc = self.multiworld.get_location("Points: " + location_row.name,self.player)
-                        qp_loc.access_rule = location.access_rule
+                    self.set_rule(fake_location,rule)
+                if location_row.category == "quest" and location_row.quest_point_reward > 0:
+                    qp_loc = self.multiworld.get_location("Points: " + location_row.name,self.player)
+                    if rule is not None:
+                        self.set_rule(qp_loc,rule)
         for location_row in sub_quests:
             if location_row.rule:
                 location = self.multiworld.get_location(location_row.name,self.player)
@@ -393,6 +394,7 @@ class OSRSWorld(RuleWorldMixin, World):
         else:
             fake_location = OSRSLocation(self.player,location_row.name+" event",location_id)
             fake_location.parent_region = region
+            fake_location.place_locked_item(self.create_event(location_row.name))
             region.locations.append(fake_location)
         if location_row.category == "quest" and location_row.quest_point_reward > 0:
             qp_name = "Points: " + location_row.name
