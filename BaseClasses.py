@@ -9,7 +9,7 @@ from argparse import Namespace
 from collections import Counter, deque
 from collections.abc import Collection, MutableSequence
 from enum import IntEnum, IntFlag
-from typing import (AbstractSet, Any, Callable, ClassVar, Dict, Iterable, Iterator, List, Literal, Mapping, NamedTuple,
+from typing import (AbstractSet, Any, Callable, ClassVar, Dict, Final, Iterable, Iterator, List, Literal, Mapping, NamedTuple,
                     Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING)
 import dataclasses
 
@@ -21,6 +21,7 @@ import Utils
 
 if TYPE_CHECKING:
     from entrance_rando import ERPlacementState
+    from rule_builder import Rule
     from worlds import AutoWorld
 
 
@@ -777,7 +778,7 @@ class CollectionState():
         else:
             self._update_reachable_regions_auto_indirect_conditions(player, queue)
 
-    def _update_reachable_regions_explicit_indirect_conditions(self, player: int, queue: deque):
+    def _update_reachable_regions_explicit_indirect_conditions(self, player: int, queue: deque[Entrance]):
         reachable_regions = self.reachable_regions[player]
         blocked_connections = self.blocked_connections[player]
         # run BFS on all connections, and keep track of those blocked by missing items
@@ -795,13 +796,14 @@ class CollectionState():
                 blocked_connections.update(new_region.exits)
                 queue.extend(new_region.exits)
                 self.path[new_region] = (new_region.name, self.path.get(connection, None))
+                self.multiworld.worlds[player].reached_region(self, new_region)
 
                 # Retry connections if the new region can unblock them
                 for new_entrance in self.multiworld.indirect_connections.get(new_region, set()):
                     if new_entrance in blocked_connections and new_entrance not in queue:
                         queue.append(new_entrance)
 
-    def _update_reachable_regions_auto_indirect_conditions(self, player: int, queue: deque):
+    def _update_reachable_regions_auto_indirect_conditions(self, player: int, queue: deque[Entrance]):
         reachable_regions = self.reachable_regions[player]
         blocked_connections = self.blocked_connections[player]
         new_connection: bool = True
@@ -823,6 +825,7 @@ class CollectionState():
                     queue.extend(new_region.exits)
                     self.path[new_region] = (new_region.name, self.path.get(connection, None))
                     new_connection = True
+                    self.multiworld.worlds[player].reached_region(self, new_region)
             # sweep for indirect connections, mostly Entrance.can_reach(unrelated_Region)
             queue.extend(blocked_connections)
 
@@ -1075,7 +1078,9 @@ class EntranceType(IntEnum):
 
 
 class Entrance:
-    access_rule: Callable[[CollectionState], bool] = staticmethod(lambda state: True)
+    default_access_rule: Final[Callable[[CollectionState], bool]] = staticmethod(lambda state: True)
+    _access_rule: Callable[[CollectionState], bool] = default_access_rule
+    resolved_rule: "Rule.Resolved | None" = None
     hide_path: bool = False
     player: int
     name: str
@@ -1091,6 +1096,19 @@ class Entrance:
         self.player = player
         self.randomization_group = randomization_group
         self.randomization_type = randomization_type
+
+    @property
+    def access_rule(self) -> Callable[[CollectionState], bool]:
+        return self._access_rule
+
+    @access_rule.setter
+    def access_rule(self, value: "Callable[[CollectionState], bool] | Rule.Resolved") -> None:
+        if callable(value):
+            self._access_rule = value
+            self.resolved_rule = None
+        else:
+            self._access_rule = value.test
+            self.resolved_rule = value
 
     def can_reach(self, state: CollectionState) -> bool:
         assert self.parent_region, f"called can_reach on an Entrance \"{self}\" with no parent_region"
@@ -1341,8 +1359,8 @@ class Region:
         Connects current region to regions in exit dictionary. Passed region names must exist first.
 
         :param exits: exits from the region. format is {"connecting_region": "exit_name"}. if a non dict is provided,
-        created entrances will be named "self.name -> connecting_region"
-        :param rules: rules for the exits from this region. format is {"connecting_region", rule}
+                      created entrances will be named "self.name -> connecting_region"
+        :param rules: rules for the exits from this region. format is {"connecting_region": rule}
         """
         if not isinstance(exits, Dict):
             exits = dict.fromkeys(exits)
@@ -1375,7 +1393,9 @@ class Location:
     show_in_spoiler: bool = True
     progress_type: LocationProgressType = LocationProgressType.DEFAULT
     always_allow: Callable[[CollectionState, Item], bool] = staticmethod(lambda state, item: False)
-    access_rule: Callable[[CollectionState], bool] = staticmethod(lambda state: True)
+    default_access_rule: Final[Callable[[CollectionState], bool]] = staticmethod(lambda state: True)
+    _access_rule: Callable[[CollectionState], bool] = default_access_rule
+    resolved_rule: "Rule.Resolved | None" =None
     item_rule: Callable[[Item], bool] = staticmethod(lambda item: True)
     item: Optional[Item] = None
 
@@ -1384,6 +1404,19 @@ class Location:
         self.name = name
         self.address = address
         self.parent_region = parent
+
+    @property
+    def access_rule(self) -> Callable[[CollectionState], bool]:
+        return self._access_rule
+
+    @access_rule.setter
+    def access_rule(self, value: "Callable[[CollectionState], bool] | Rule.Resolved") -> None:
+        if callable(value):
+            self._access_rule = value
+            self.resolved_rule = None
+        else:
+            self._access_rule = value.test
+            self.resolved_rule = value
 
     def can_fill(self, state: CollectionState, item: Item, check_access: bool = True) -> bool:
         return ((

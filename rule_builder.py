@@ -1,11 +1,10 @@
 import dataclasses
-import itertools
 import operator
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Literal, cast
+from typing import TYPE_CHECKING, Any, Callable, Generic, Literal, cast
 
-from typing_extensions import Never, Self, TypeVar, dataclass_transform, override
+from typing_extensions import ClassVar, Never, Self, TypeVar, dataclass_transform, override
 
 from BaseClasses import Entrance
 
@@ -20,18 +19,20 @@ else:
 
 class RuleWorldMixin(World):
     rule_ids: "dict[int, Rule.Resolved]"
-    rule_dependencies: dict[str, set[int]]
-
-    custom_rule_classes: "ClassVar[dict[str, type[Rule[Self]]]]"
+    rule_item_dependencies: dict[str, set[int]]
+    rule_region_dependencies: dict[str, set[int]]
+    rule_location_dependencies: dict[str, set[int]]
 
     def __init__(self, multiworld: "MultiWorld", player: int) -> None:
         super().__init__(multiworld, player)
         self.rule_ids = {}
-        self.rule_dependencies = defaultdict(set)
+        self.rule_item_dependencies = defaultdict(set)
+        self.rule_region_dependencies = defaultdict(set)
+        self.rule_location_dependencies = defaultdict(set)
 
     @classmethod
     def get_rule_cls(cls, name: str) -> "type[Rule[Self]]":
-        custom_rule_classes = getattr(cls, "custom_rule_classes", {})
+        custom_rule_classes = CustomRuleRegister.custom_rules.get(cls.game, {})
         if name not in DEFAULT_RULES and name not in custom_rule_classes:
             raise ValueError(f"Rule {name} not found")
         return custom_rule_classes.get(name) or DEFAULT_RULES[name]
@@ -45,16 +46,18 @@ class RuleWorldMixin(World):
     def resolve_rule(self, rule: "Rule[Self]") -> "Rule.Resolved":
         resolved_rule = rule.resolve(self)
         for item_name, rule_ids in resolved_rule.item_dependencies().items():
-            self.rule_dependencies[item_name] |= rule_ids
+            self.rule_item_dependencies[item_name] |= rule_ids
+        for region_name, rule_ids in resolved_rule.region_dependencies().items():
+            self.rule_region_dependencies[region_name] |= rule_ids
         return resolved_rule
 
     def register_rule_connections(self, resolved_rule: "Rule.Resolved", entrance: "Entrance") -> None:
-        for indirect_region in resolved_rule.indirect_regions():
+        for indirect_region in resolved_rule.region_dependencies().keys():
             self.multiworld.register_indirect_condition(self.get_region(indirect_region), entrance)
 
     def set_rule(self, spot: "Location | Entrance", rule: "Rule[Self]") -> None:
         resolved_rule = self.resolve_rule(rule)
-        spot.access_rule = resolved_rule.test
+        spot.access_rule = resolved_rule
         if self.explicit_indirect_conditions and isinstance(spot, Entrance):
             self.register_rule_connections(resolved_rule, spot)
 
@@ -70,7 +73,9 @@ class RuleWorldMixin(World):
             if resolved_rule.always_false:
                 return None
 
-        entrance = from_region.connect(to_region, rule=resolved_rule.test if resolved_rule else None)
+        entrance = from_region.connect(to_region)
+        if resolved_rule:
+            entrance.access_rule = resolved_rule
         if resolved_rule is not None:
             self.register_rule_connections(resolved_rule, entrance)
         return entrance
@@ -190,34 +195,36 @@ class RuleWorldMixin(World):
     @override
     def collect(self, state: "CollectionState", item: "Item") -> bool:
         changed = super().collect(state, item)
-        if changed and getattr(self, "rule_dependencies", None):
+        if changed and getattr(self, "rule_item_dependencies", None):
             player_results: dict[int, bool] = state.rule_cache[self.player]
-            for rule_id in self.rule_dependencies[item.name]:
-                _ = player_results.pop(rule_id, None)
+            for rule_id in self.rule_item_dependencies[item.name]:
+                player_results.pop(rule_id, None)
         return changed
 
     @override
     def remove(self, state: "CollectionState", item: "Item") -> bool:
         changed = super().remove(state, item)
-        if changed and getattr(self, "rule_dependencies", None):
+
+        if changed and getattr(self, "rule_item_dependencies", None):
             player_results: dict[int, bool] = state.rule_cache[self.player]
-            for rule_id in self.rule_dependencies[item.name]:
-                _ = player_results.pop(rule_id, None)
+            for rule_id in self.rule_item_dependencies[item.name]:
+                player_results.pop(rule_id, None)
+
+        # clear all region dependent caches as none can be trusted
+        if changed and getattr(self, "rule_region_dependencies", None):
+            for rule_ids in self.rule_region_dependencies.values():
+                for rule_id in rule_ids:
+                    state.rule_cache[self.player].pop(rule_id, None)
+
         return changed
 
-
-TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True, default=RuleWorldMixin)  # noqa: PLC0105
-
-
-@dataclass_transform()
-def custom_rule(world_cls: "type[TWorld]", init: bool = True) -> "Callable[..., type[Rule[TWorld]]]":
-    def decorator(rule_cls: "type[Rule[TWorld]]") -> "type[Rule[TWorld]]":
-        if not hasattr(world_cls, "custom_rule_classes"):
-            world_cls.custom_rule_classes = {}
-        world_cls.custom_rule_classes[rule_cls.__name__] = rule_cls
-        return dataclasses.dataclass(init=init)(rule_cls)
-
-    return decorator
+    @override
+    def reached_region(self, state: "CollectionState", region: "Region") -> None:
+        super().reached_region(state, region)
+        if getattr(self, "rule_region_dependencies", None):
+            player_results: dict[int, bool] = state.rule_cache[self.player]
+            for rule_id in self.rule_region_dependencies[region.name]:
+                player_results.pop(rule_id, None)
 
 
 Operator = Literal["eq", "ne", "gt", "lt", "ge", "le", "contains"]
@@ -233,6 +240,7 @@ OPERATORS = {
 }
 
 T = TypeVar("T")
+TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True, default=RuleWorldMixin)  # noqa: PLC0105
 
 
 @dataclasses.dataclass(frozen=True)
@@ -240,6 +248,42 @@ class OptionFilter(Generic[T]):
     option: "type[Option[T]]"
     value: T
     operator: Operator = "eq"
+
+
+def _create_hash_fn(resolved_rule_cls: "CustomRuleRegister") -> "Callable[..., int]":
+    def __hash__(self: "Rule.Resolved") -> int:
+        return hash(
+            (
+                self.__class__.__module__,
+                self.rule_name,
+                *[getattr(self, f.name) for f in dataclasses.fields(self)],
+            )
+        )
+
+    __hash__.__qualname__ = f"{resolved_rule_cls.__qualname__}.{__hash__.__name__}"
+    return __hash__
+
+
+@dataclass_transform(frozen_default=True, field_specifiers=(dataclasses.field, dataclasses.Field))
+class CustomRuleRegister(type):
+    custom_rules: ClassVar[dict[str, dict[str, type["Rule[Any]"]]]] = {}
+    rule_name: str = "Rule"
+
+    def __new__(
+        cls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        /,
+        **kwds: dict[str, Any],
+    ) -> "type[CustomRuleRegister]":
+        new_cls = super().__new__(cls, name, bases, namespace, **kwds)
+        new_cls.__hash__ = _create_hash_fn(new_cls)
+        rule_name = new_cls.__qualname__
+        if rule_name.endswith(".Resolved"):
+            rule_name = rule_name[:-9]
+        new_cls.rule_name = rule_name
+        return dataclasses.dataclass(frozen=True)(new_cls)
 
 
 @dataclasses.dataclass()
@@ -297,7 +341,7 @@ class Rule(Generic[TWorld]):
     def from_json(cls, data: Mapping[str, Any]) -> Self:
         return cls(**data.get("args", {}))
 
-    def __and__(self, other: "Rule[TWorld]") -> "Rule[TWorld]":
+    def __and__(self, other: "Rule[Any]") -> "Rule[TWorld]":
         """Combines two rules into an And rule"""
         if isinstance(self, And):
             if isinstance(other, And):
@@ -309,7 +353,7 @@ class Rule(Generic[TWorld]):
             return And(self, *other.children, options=other.options)
         return And(self, other)
 
-    def __or__(self, other: "Rule[TWorld]") -> "Rule[TWorld]":
+    def __or__(self, other: "Rule[Any]") -> "Rule[TWorld]":
         """Combines two rules into an Or rule"""
         if isinstance(self, Or):
             if isinstance(other, Or):
@@ -330,14 +374,26 @@ class Rule(Generic[TWorld]):
         options = f"options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({options})"
 
-    @dataclasses.dataclass(kw_only=True, frozen=True)
-    class Resolved:
+    @classmethod
+    def __init_subclass__(cls, /, game: str) -> None:
+        if game != "Archipelago":
+            custom_rules = CustomRuleRegister.custom_rules.setdefault(game, {})
+            if cls.__qualname__ in custom_rules:
+                raise TypeError(f"Rule {cls.__qualname__} has already been registered for game {game}")
+            custom_rules[cls.__qualname__] = cls
+        elif cls.__module__ != "rule_builder":
+            # TODO: test to make sure this works on frozen
+            raise TypeError("You cannot define custom rules for the base Archipelago world")
+
+    class Resolved(metaclass=CustomRuleRegister):
         """A resolved rule for a given world that can be used as an access rule"""
+
+        _: dataclasses.KW_ONLY
 
         player: int
         """The player this rule is for"""
 
-        cacheable: bool = dataclasses.field(repr=False, default=True)
+        cacheable: bool = dataclasses.field(repr=False, default=True, kw_only=True)
         """If this rule should be cached in the state"""
 
         rule_name: ClassVar[str] = "Rule"
@@ -348,16 +404,6 @@ class Rule(Generic[TWorld]):
 
         always_false: ClassVar[bool] = False
         """Whether this rule always evaluates to True, used to short-circuit logic"""
-
-        @override
-        def __hash__(self) -> int:
-            return hash(
-                (
-                    self.__class__.__module__,
-                    self.rule_name,
-                    *[getattr(self, f.name) for f in dataclasses.fields(self)],
-                )
-            )
 
         def _evaluate(self, state: "CollectionState") -> bool:
             """Calculate this rule's result with the given state"""
@@ -380,16 +426,17 @@ class Rule(Generic[TWorld]):
             return self.evaluate(state)
 
         def item_dependencies(self) -> dict[str, set[int]]:
-            """Returns a mapping of item name to set of object ids to be used for cache invalidation"""
+            """Returns a mapping of item name to set of object ids, used for cache invalidation"""
             return {}
 
-        def indirect_regions(self) -> tuple[str, ...]:
-            """Returns a tuple of region names this rule is indirectly connected to"""
-            return ()
+        def region_dependencies(self) -> dict[str, set[int]]:
+            """Returns a mapping of region name to set of object ids,
+            used for indirect connections and cache invalidation"""
+            return {}
 
         def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
             """Returns a list of printJSON messages that explain the logic for this rule"""
-            return [{"type": "text", "text": self.__class__.__name__}]
+            return [{"type": "text", "text": self.rule_name}]
 
         def explain_str(self, state: "CollectionState | None" = None) -> str:
             """Returns a human readable string describing this rule"""
@@ -397,18 +444,15 @@ class Rule(Generic[TWorld]):
 
         @override
         def __str__(self) -> str:
-            return f"{self.__class__.__name__}()"
+            return f"{self.rule_name}()"
 
 
 @dataclasses.dataclass()
-class True_(Rule[TWorld]):
+class True_(Rule[TWorld], game="Archipelago"):
     """A rule that always returns True"""
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
-        cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
         always_true: ClassVar[bool] = True
-        rule_name: ClassVar[str] = "True_"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -422,20 +466,13 @@ class True_(Rule[TWorld]):
         def __str__(self) -> str:
             return "True"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class False_(Rule[TWorld]):
+class False_(Rule[TWorld], game="Archipelago"):
     """A rule that always returns False"""
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
-        cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
         always_false: ClassVar[bool] = True
-        rule_name: ClassVar[str] = "False_"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -449,13 +486,9 @@ class False_(Rule[TWorld]):
         def __str__(self) -> str:
             return "False"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass(init=False)
-class NestedRule(Rule[TWorld]):
+class NestedRule(Rule[TWorld], game="Archipelago"):
     children: "tuple[Rule[TWorld], ...]"
 
     def __init__(self, *children: "Rule[TWorld]", options: "Iterable[OptionFilter[Any]]" = ()) -> None:
@@ -486,10 +519,8 @@ class NestedRule(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({children}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         children: "tuple[Rule.Resolved, ...]"
-        rule_name: ClassVar[str] = "NestedRule"
 
         @override
         def item_dependencies(self) -> dict[str, set[int]]:
@@ -503,20 +534,20 @@ class NestedRule(Rule[TWorld]):
             return combined_deps
 
         @override
-        def indirect_regions(self) -> tuple[str, ...]:
-            return tuple(itertools.chain.from_iterable(child.indirect_regions() for child in self.children))
-
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
+        def region_dependencies(self) -> dict[str, set[int]]:
+            combined_deps: dict[str, set[int]] = {}
+            for child in self.children:
+                for region_name, rules in child.region_dependencies().items():
+                    if region_name in combined_deps:
+                        combined_deps[region_name] |= rules
+                    else:
+                        combined_deps[region_name] = {id(self), *rules}
+            return combined_deps
 
 
 @dataclasses.dataclass(init=False)
-class And(NestedRule[TWorld]):
-    @dataclasses.dataclass(frozen=True)
+class And(NestedRule[TWorld], game="Archipelago"):
     class Resolved(NestedRule.Resolved):
-        rule_name: ClassVar[str] = "And"
-
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             for rule in self.children:
@@ -544,17 +575,10 @@ class And(NestedRule[TWorld]):
             clauses = " & ".join([str(c) for c in self.children])
             return f"({clauses})"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass(init=False)
-class Or(NestedRule[TWorld]):
-    @dataclasses.dataclass(frozen=True)
+class Or(NestedRule[TWorld], game="Archipelago"):
     class Resolved(NestedRule.Resolved):
-        rule_name: ClassVar[str] = "Or"
-
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             for rule in self.children:
@@ -582,13 +606,9 @@ class Or(NestedRule[TWorld]):
             clauses = " | ".join([str(c) for c in self.children])
             return f"({clauses})"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class Wrapper(Rule[TWorld]):
+class Wrapper(Rule[TWorld], game="Archipelago"):
     """A rule that wraps another rule to provide extra logic or data"""
 
     child: "Rule[TWorld]"
@@ -617,10 +637,8 @@ class Wrapper(Rule[TWorld]):
     def __str__(self) -> str:
         return f"{self.__class__.__name__}[{self.child}]"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         child: "Rule.Resolved"
-        rule_name: ClassVar[str] = "Wrapper"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -634,31 +652,30 @@ class Wrapper(Rule[TWorld]):
             return deps
 
         @override
-        def indirect_regions(self) -> tuple[str, ...]:
-            return self.child.indirect_regions()
+        def region_dependencies(self) -> dict[str, set[int]]:
+            deps: dict[str, set[int]] = {}
+            for region_name, rules in self.child.region_dependencies().items():
+                deps[region_name] = {id(self), *rules}
+            return deps
 
         @override
         def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
-            messages: "list[JSONMessagePart]" = [{"type": "text", "text": f"{self.__class__.__name__} ["}]
+            messages: "list[JSONMessagePart]" = [{"type": "text", "text": f"{self.rule_name} ["}]
             messages.extend(self.child.explain_json(state))
             messages.append({"type": "text", "text": "]"})
             return messages
 
         @override
         def explain_str(self, state: "CollectionState | None" = None) -> str:
-            return f"{self.__class__.__name__}[{self.child.explain_str(state)}]"
+            return f"{self.rule_name}[{self.child.explain_str(state)}]"
 
         @override
         def __str__(self) -> str:
-            return f"{self.__class__.__name__}[{self.child}]"
-
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
+            return f"{self.rule_name}[{self.child}]"
 
 
 @dataclasses.dataclass()
-class Has(Rule[TWorld]):
+class Has(Rule[TWorld], game="Archipelago"):
     item_name: str
     count: int = 1
 
@@ -672,11 +689,9 @@ class Has(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({self.item_name}{count}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         item_name: str
         count: int = 1
-        rule_name: ClassVar[str] = "Has"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -708,13 +723,9 @@ class Has(Rule[TWorld]):
             count = f"{self.count}x " if self.count > 1 else ""
             return f"Has {count}{self.item_name}"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass(init=False)
-class HasAll(Rule[TWorld]):
+class HasAll(Rule[TWorld], game="Archipelago"):
     """A rule that checks if the player has all of the given items"""
 
     item_names: tuple[str, ...]
@@ -738,10 +749,8 @@ class HasAll(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({items}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         item_names: tuple[str, ...]
-        rule_name: ClassVar[str] = "HasAll"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -782,13 +791,9 @@ class HasAll(Rule[TWorld]):
             items = ", ".join(self.item_names)
             return f"Has all of ({items})"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class HasAny(Rule[TWorld]):
+class HasAny(Rule[TWorld], game="Archipelago"):
     """A rule that checks if the player has at least one of the given items"""
 
     item_names: tuple[str, ...]
@@ -812,10 +817,8 @@ class HasAny(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({items}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         item_names: tuple[str, ...]
-        rule_name: ClassVar[str] = "HasAny"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -856,13 +859,9 @@ class HasAny(Rule[TWorld]):
             items = ", ".join(self.item_names)
             return f"Has all of ({items})"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class CanReachLocation(Rule[TWorld]):
+class CanReachLocation(Rule[TWorld], game="Archipelago"):
     location_name: str
     """The name of the location to test access to"""
 
@@ -889,22 +888,19 @@ class CanReachLocation(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({self.location_name}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         location_name: str
         parent_region_name: str
-        cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
-        rule_name: ClassVar[str] = "CanReachLocation"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             return state.can_reach_location(self.location_name, self.player)
 
         @override
-        def indirect_regions(self) -> tuple[str, ...]:
+        def region_dependencies(self) -> dict[str, set[int]]:
             if self.parent_region_name:
-                return (self.parent_region_name,)
-            return ()
+                return {self.parent_region_name: {id(self)}}
+            return {}
 
         @override
         def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
@@ -924,14 +920,11 @@ class CanReachLocation(Rule[TWorld]):
         def __str__(self) -> str:
             return f"Can reach location {self.location_name}"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class CanReachRegion(Rule[TWorld]):
+class CanReachRegion(Rule[TWorld], game="Archipelago"):
     region_name: str
+    """The name of the region to test access to"""
 
     @override
     def _instantiate(self, world: "TWorld") -> "Resolved":
@@ -942,19 +935,16 @@ class CanReachRegion(Rule[TWorld]):
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({self.region_name}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         region_name: str
-        cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
-        rule_name: ClassVar[str] = "CanReachRegion"
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             return state.can_reach_region(self.region_name, self.player)
 
         @override
-        def indirect_regions(self) -> tuple[str, ...]:
-            return (self.region_name,)
+        def region_dependencies(self) -> dict[str, set[int]]:
+            return {self.region_name: {id(self)}}
 
         @override
         def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
@@ -974,33 +964,43 @@ class CanReachRegion(Rule[TWorld]):
         def __str__(self) -> str:
             return f"Can reach region {self.region_name}"
 
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
-
 
 @dataclasses.dataclass()
-class CanReachEntrance(Rule[TWorld]):
+class CanReachEntrance(Rule[TWorld], game="Archipelago"):
     entrance_name: str
+    """The name of the entrance to test access to"""
+
+    parent_region_name: str = ""
+    """The name of the entrance's parent region. If not specified it will be resolved when the rule is resolved"""
 
     @override
     def _instantiate(self, world: "TWorld") -> "Resolved":
-        return self.Resolved(self.entrance_name, player=world.player)
+        parent_region_name = self.parent_region_name
+        if not parent_region_name:
+            entrance = world.get_entrance(self.entrance_name)
+            if not entrance.parent_region:
+                raise ValueError(f"Entrance {entrance.name} has no parent region")
+            parent_region_name = entrance.parent_region.name
+        return self.Resolved(self.entrance_name, parent_region_name, player=world.player)
 
     @override
     def __str__(self) -> str:
         options = f", options={self.options}" if self.options else ""
         return f"{self.__class__.__name__}({self.entrance_name}{options})"
 
-    @dataclasses.dataclass(frozen=True)
     class Resolved(Rule.Resolved):
         entrance_name: str
-        cacheable: bool = dataclasses.field(repr=False, default=False, init=False)
-        rule_name: ClassVar[str] = "CanReachEntrance"
+        parent_region_name: str
 
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             return state.can_reach_entrance(self.entrance_name, self.player)
+
+        @override
+        def region_dependencies(self) -> dict[str, set[int]]:
+            if self.parent_region_name:
+                return {self.parent_region_name: {id(self)}}
+            return {}
 
         @override
         def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
@@ -1019,10 +1019,6 @@ class CanReachEntrance(Rule[TWorld]):
         @override
         def __str__(self) -> str:
             return f"Can reach entrance {self.entrance_name}"
-
-        @override
-        def __hash__(self) -> int:
-            return super().__hash__()
 
 
 DEFAULT_RULES = {
