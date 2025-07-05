@@ -17,10 +17,10 @@ from .LogicCSV.LogicCSVToPython import data_csv_tag
 #from .LogicCSV.locations_generated import location_rows
 #from .LogicCSV.regions_generated import region_rows
 #from .LogicCSV.resources_generated import resource_rows
-from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,resource_rows,rr_entrances,re_entrances,ee_entrances,rm_entrances,me_entrances,sub_quests,quests,non_quests,training_methods,non_monster_drops,monster_drops,mm_entrances
+from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,resource_rows,rr_entrances,re_entrances,ee_entrances,rm_entrances,me_entrances,sub_quests,quests,non_quests,training_methods,non_monster_drops,monster_drops,mm_entrances,skill_names,task_macros
 from .Regions import RegionRow, ResourceRow, DropElement, MonsterRow, RuleElement, RewardElement, LocationRow, EntranceRow, TrainingRow
 
-from typing import Callable
+from typing import Callable, Counter
 
 class OSRSWeb(WebWorld):
     theme = "stone"
@@ -37,6 +37,7 @@ class OSRSWeb(WebWorld):
 
 base_id = 0x070000
 
+
 class OSRSWorld(RuleWorldMixin, World):
     """
     The best retro fantasy MMORPG on the planet. Old School is RuneScape but… older! This is the open world you know and love, but as it was in 2007.
@@ -51,23 +52,17 @@ class OSRSWorld(RuleWorldMixin, World):
     web = OSRSWeb()
     base_id = base_id
     data_version = 1
-    explicit_indirect_conditions = False
 
     item_name_to_id = {item_rows[i].name: base_id + i for i in range(len(item_rows))}
     location_name_to_id = {location_rows[i].name: base_id + i for i in range(len(location_rows))}
+    item_mapping = {f"Training_{skill_name}_{level}":f"Training_{skill_name}" for level in range(1,100) for skill_name in skill_names}
 
     region_name_to_data: typing.Dict[str, Region]
     location_name_to_data: typing.Dict[str, OSRSLocation]
-
-    location_rows_by_name: typing.Dict[str, LocationRow]
-    region_rows_by_name: typing.Dict[str, RegionRow]
-    resource_rows_by_name: typing.Dict[str, ResourceRow]
-    monster_rows_by_name: typing.Dict[str, MonsterRow]
-    item_rows_by_name: typing.Dict[str, ItemRow]
+    item_rows_by_name: typing.ClassVar[dict[str, ItemRow]] = {it_row.name: it_row for it_row in item_rows}
 
     starting_area_item: str
 
-    locations_by_category: typing.Dict[str, typing.List[LocationRow]]
     available_QP_locations: typing.List[str]
 
     def __init__(self, multiworld: MultiWorld, player: int):
@@ -75,30 +70,22 @@ class OSRSWorld(RuleWorldMixin, World):
         self.region_name_to_data = {}
         self.location_name_to_data = {}
 
-        self.location_rows_by_name = {}
-        self.region_rows_by_name = {}
-        self.resource_rows_by_name = {}
-        self.item_rows_by_name = {}
-
         self.starting_area_item = ""
 
-        self.locations_by_category = {}
         self.available_QP_locations = []
 
     def generate_early(self) -> None:
-        location_categories = [location_row.category for location_row in location_rows]
-        self.locations_by_category = {category:
-                                          [location_row for location_row in location_rows if
-                                           location_row.category == category]
-                                      for category in location_categories}
 
-        self.location_rows_by_name = {loc_row.name: loc_row for loc_row in location_rows}
-        self.region_rows_by_name = {reg_row.name: reg_row for reg_row in region_rows}
-        self.resource_rows_by_name = {rec_row.name: rec_row for rec_row in resource_rows}
-        self.item_rows_by_name = {it_row.name: it_row for it_row in item_rows}
-        self.monster_rows_by_name = {it_row.name: it_row for it_row in monster_drops}
+        if self.options.starting_area.value == "any_chunk":
+            self.starting_area_item = "Area: Lumbridge Castle"
+            #not currently supported (need to exclude quest/item locked chunks)
+        elif self.options.starting_area.value == "any_bank":
+            self.starting_area_item = "Area: Lumbridge Castle"
+            #not currently supported (need to exclude quest/item locked chunks)
+        else:
+            starting_area_name = f"Area: {self.options.starting_area.value}"
 
-        self.starting_area_item = "Area: Lumbridge Castle"
+            self.starting_area_item = starting_area_name if starting_area_name in self.item_name_to_id else "Area: Lumbridge Castle"
 
         self.multiworld.push_precollected(self.create_item(self.starting_area_item))
 
@@ -137,8 +124,36 @@ class OSRSWorld(RuleWorldMixin, World):
             return CanReachRegion(rule_element.value)
         elif rule_element.type == "kill":
             return CanReachRegion(rule_element.value)
+        elif rule_element.type == "skill":
+            skill,level = rule_element.value.rsplit("_",2)
+            assert level.isdigit()
+            if int(level) <= 1: return None
+            if skill in ("Attack","Strength","Defence","Prayer","Hitpoints","Combat"):
+                return And(CanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2))
+            if skill == "Slayer":
+                return And(CanReachRegion("PointSlayerMasters[+]"),Has("Quest Point",(int(level)-1)*2))
+            if skill == "Ranged":
+                return And(CanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2),CanReachRegion("Iron arrow"))
+            return HasTraining(skill,int(level))
+        elif rule_element.type == "questPoints":
+            return Has("Quest Point",int(rule_element.value))
+        elif rule_element.type == "kudos":
+            return Has("Kudo",int(rule_element.value))
+        elif rule_element.type == "combatPoints":
+            return Has("Combat Point",int(rule_element.value))
+        elif rule_element.type.startswith("task_macro"):
+            if rule_element.value not in task_macros:
+                raise Exception("Task macro but it doesn't exist..."+rule_element.value)
+            if rule_element.value.startswith("task_macrox"):
+                _,count = rule_element.type.split("x",2)
+                if count.isdigit():
+                    count = int(count)
+                    return HasCount(task_macros[rule_element.value],count)
+            else:
+                return HasAny(*task_macros[rule_element.value])
         else:
-            return None
+            #return None
+            raise Exception("unknown rule fragment found "+rule_element.type)
 
 
     def generate_lambda(self, rule_list:list[RuleElement]):
@@ -189,6 +204,8 @@ class OSRSWorld(RuleWorldMixin, World):
             self.create_location(location)
         for sub_location in sub_quests:
             self.create_location(sub_location)
+        for training_method in training_methods:
+            self.create_training(training_method)
 
         #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
     
@@ -339,8 +356,16 @@ class OSRSWorld(RuleWorldMixin, World):
                 if rule is not None:
                     self.set_rule(location,rule)
                     self.set_rule(fake_location,rule)
-                if location_row.category == "quest" and location_row.quest_point_reward > 0:
+                if location_row.quest_point_reward > 0:
                     qp_loc = self.multiworld.get_location("Points: " + location_row.name,self.player)
+                    if rule is not None:
+                        self.set_rule(qp_loc,rule)
+                if location_row.combat_point_reward > 0:
+                    qp_loc = self.multiworld.get_location("CombatPoints: " + location_row.name,self.player)
+                    if rule is not None:
+                        self.set_rule(qp_loc,rule)
+                if location_row.kudos_reward > 0:
+                    qp_loc = self.multiworld.get_location("Kudos: " + location_row.name,self.player)
                     if rule is not None:
                         self.set_rule(qp_loc,rule)
         for location_row in sub_quests:
@@ -349,22 +374,41 @@ class OSRSWorld(RuleWorldMixin, World):
                 rule = self.generate_lambda(location_row.rule)
                 if rule is not None:
                     self.set_rule(location,rule)
+                if location_row.quest_point_reward > 0:
+                    raise Exception("This shouldn't happen but i want to know if it does "+location_row.name)
+                if location_row.combat_point_reward > 0:
+                    qp_loc = self.multiworld.get_location("CombatPoints: " + location_row.name,self.player)
+                    if rule is not None:
+                        self.set_rule(qp_loc,rule)
+                if location_row.kudos_reward > 0:
+                    raise Exception("This shouldn't happen but i want to know if it does "+location_row.name)
+        for training_method in training_methods:
+            if training_method.rule:
+                method = self.get_location(f"Training {training_method.skill_name}: {training_method.task_name}")
+                rule = self.generate_lambda(training_method.rule)
+                if rule is not None:
+                    self.set_rule(method,rule)
 
         # place "Victory" at "Dragon Slayer" and set collection as win condition
-        self.multiworld.get_location("~|Dragon Slayer I|~ Complete the quest", self.player) \
+
+        goal_location_name = self.options.goal_location.value if self.options.goal_location.value in self.location_name_to_id else "~|Dragon Slayer I|~ Complete the quest"
+
+        self.multiworld.get_location(goal_location_name, self.player) \
             .place_locked_item(self.create_item("Area: Victory"))
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("~|Combat Achievements#Elite|~ Vardorvis Adept", self.player))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
 
     def create_items(self) -> None:
         itempool = []
         for item_row in item_rows:
-            if item_row.name not in [self.starting_area_item]:
+            if item_row.name not in ["Area: Victory", self.starting_area_item]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
                     itempool.append(item)
 
-        while len(itempool) < len(self.multiworld.get_unfilled_locations(self.player)):
+        un_filled_loc_size = len(self.multiworld.get_unfilled_locations(self.player))
+        while len(itempool) < un_filled_loc_size:
             itempool.append(self.create_filler())
+        
 
         self.multiworld.itempool += itempool
 
@@ -392,17 +436,42 @@ class OSRSWorld(RuleWorldMixin, World):
         if location_row.category == "subquest":
             location.place_locked_item(self.create_event(location_row.name))
         else:
-            fake_location = OSRSLocation(self.player,location_row.name+" event",location_id)
+            fake_location = OSRSLocation(self.player,location_row.name+" event",None)
+            fake_location.show_in_spoiler = False
             fake_location.parent_region = region
             fake_location.place_locked_item(self.create_event(location_row.name))
             region.locations.append(fake_location)
-        if location_row.category == "quest" and location_row.quest_point_reward > 0:
+        if location_row.quest_point_reward > 0:
             qp_name = "Points: " + location_row.name
             qp_loc = OSRSLocation(self.player,qp_name,None)
+            qp_loc.show_in_spoiler = False
             self.location_name_to_data[qp_name] = qp_loc
             qp_loc.parent_region = region
-            qp_loc.place_locked_item(self.create_event(f"{location_row.quest_point_reward} QP ({location_row.name})"))
+            qp_loc.place_locked_item(self.create_event(f"QP {location_row.quest_point_reward} ({location_row.name})"))
             region.locations.append(qp_loc)
+        if location_row.kudos_reward > 0:
+            qp_name = "Kudos: " + location_row.name
+            qp_loc = OSRSLocation(self.player,qp_name,None)
+            qp_loc.show_in_spoiler = False
+            self.location_name_to_data[qp_name] = qp_loc
+            qp_loc.parent_region = region
+            qp_loc.place_locked_item(self.create_event(f"Kudos {location_row.kudos_reward} ({location_row.name})"))
+            region.locations.append(qp_loc)
+        if location_row.combat_point_reward > 0:
+            qp_name = "CombatPoints: " + location_row.name
+            qp_loc = OSRSLocation(self.player,qp_name,None)
+            qp_loc.show_in_spoiler = False
+            self.location_name_to_data[qp_name] = qp_loc
+            qp_loc.parent_region = region
+            qp_loc.place_locked_item(self.create_event(f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"))
+            region.locations.append(qp_loc)
+    
+    def create_training(self, training_row:TrainingRow):
+        parent_region = self.get_region(training_row.parent_region)
+        method = OSRSLocation(self.player,f"Training {training_row.skill_name}: {training_row.task_name}",None,parent_region)
+        method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+10}"))
+        method.show_in_spoiler = False
+        parent_region.locations.append(method)
 
     def create_region(self, name: str) -> "Region":
         region = Region(name, self.player, self.multiworld)
@@ -422,4 +491,103 @@ class OSRSWorld(RuleWorldMixin, World):
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
         return OSRSItem(event, ItemClassification.progression, None, self.player)
+    
+    def collect(self, state: CollectionState, item: Item) -> bool:
+        if item.name.startswith("QP "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.add_item(item="Quest Point",player=self.player,count=(qp_count-1))
+            super().collect(state,self.create_event("Quest Point"))
+        if item.name.startswith("CombatPoints "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.add_item(item="Combat Point",player=self.player,count=(qp_count-1))
+            super().collect(state,self.create_event("Combat Point"))
+        if item.name.startswith("Kudos "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.add_item(item="Kudo",player=self.player,count=(qp_count-1))
+            super().collect(state,self.create_event("Kudo"))
+        return super().collect(state, item)
+    
+    def remove(self, state: CollectionState, item: Item) -> bool:
+        if item.name.startswith("QP "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.remove_item(item="Quest Point",player=self.player,count=(qp_count-1))
+            super().remove(state,self.create_event("Quest Point"))
+        if item.name.startswith("CombatPoints "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.remove_item(item="Combat Point",player=self.player,count=(qp_count-1))
+            super().remove(state,self.create_event("Combat Point"))
+        if item.name.startswith("Kudos "):
+            qp_count = int(item.name.split(" ",3)[1])
+            if qp_count > 1:
+                state.remove_item(item="Kudo",player=self.player,count=(qp_count-1))
+            super().remove(state,self.create_event("Kudo"))
+        return super().remove(state, item)
+    
+    
+@dataclasses.dataclass()
+class HasCount(Rule[OSRSWorld],game="OSRSWorld"):
+    task_list: list[str]
+    needed_count: int
+    def _instantiate(self, world: OSRSWorld) -> Rule.Resolved:
+        return self.Resolved(self.task_list,self.needed_count,player=world.player,cacheable=True)
+    
+    class Resolved(Rule.Resolved):
+        task_list: list[str]
+        needed_count: int
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            return state.has_from_list(self.task_list,self.player,self.needed_count)
+        
+        @override
+        def item_dependencies(self) -> dict[str, set[int]]:
+            return {i:{id(self)} for i in self.task_list}
+        
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return str(self)
+            result = self._evaluate(state)
+            return f'{"Has at least" if result else "Need at least"} {self.needed_count} items from ({", ".join([f"{state.count(x,self.player)}x {x}" for x in self.task_list])}'
+        
+        def __str__(self) -> str:
+            return f"Need at least {self.needed_count} from ({', '.join(self.task_list)})"
+
+@dataclasses.dataclass()
+class HasTraining(Rule["OSRSWorld"],game="OSRSWorld"):
+    skill_name: str
+    skill_level: int
+    def _instantiate(self, world: "OSRSWorld") -> Rule.Resolved:
+        return self.Resolved(self.skill_name,self.skill_level,tuple([f"Training_{self.skill_name}_{level}" for level in range(self.skill_level,100)]),player=world.player,cacheable=True)
+
+    class Resolved(Rule.Resolved):
+        skill_name: str
+        skill_level: int
+        _relevent_items: tuple[str,...]
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            return state.has_any(self._relevent_items,self.player) or \
+                state.has_any([f"Training_{self.skill_name}_{level}" for level in range(max(0,self.skill_level-(state.count("Quest Point",self.player)//10)),self.skill_level)],self.player)
+
+        @override
+        def item_dependencies(self) -> dict[str, set[int]]:
+            return {f"Training_{self.skill_name}":{id(self)},"Quest Point":{id(self)}}
+        
+        @override
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return str(self)
+            result = self._evaluate(state)
+            if result:
+                return f"Can train level {self.skill_level} {self.skill_name}"
+            else:
+                return f"Can't train level {self.skill_level} {self.skill_name}"
+        
+        def __str__(self) -> str:
+            return f"Train level {self.skill_level} {self.skill_name}"
 

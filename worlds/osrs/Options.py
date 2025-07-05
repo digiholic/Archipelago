@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import Choice, Toggle, Range, PerGameCommonOptions
+from Options import Choice, Toggle, Range, PerGameCommonOptions,FreeText,Visibility
 
 MAX_COMBAT_TASKS = 16
 
@@ -18,26 +18,21 @@ MAX_WOODCUTTING_TASKS = 3
 NON_QUEST_LOCATION_COUNT = 49
 
 
-class StartingArea(Choice):
+class StartingArea(FreeText):
     """
     Which chunks are available at the start. The player may need to move through locked chunks to reach the starting
     area, but any areas that require quests, skills, or coins are not available as a starting location.
 
-    "Any Bank" rolls a random region that contains a bank.
-    Chunksanity can start you in any chunk. Hope you like woodcutting!
+    NOTE: MEMBERS LOGIC ISSUE: WE DON'T ACTUALLY CARE ABOUT WHAT YOUR START COULD BE HAVE FUN!
     """
     display_name = "Starting Region"
-    option_lumbridge = 0
-    option_al_kharid = 1
-    option_varrock_east = 2
-    option_varrock_west = 3
-    option_edgeville = 4
-    option_falador = 5
-    option_draynor = 6
-    option_wilderness = 7
-    option_any_bank = 8
-    option_chunksanity = 9
-    default = 0
+    default = "Lumbridge Castle"
+class GoalLocation(FreeText):
+    """
+    Which location name to consider to be the goal.
+    """
+    display_name = "Goal Location"
+    default = "~|Dragon Slayer I|~ Complete the quest"
 
 
 class BrutalGrinds(Toggle):
@@ -47,6 +42,7 @@ class BrutalGrinds(Toggle):
     or training fishing to high levels entirely on shrimp.
     """
     display_name = "Allow Brutal Grinds"
+    visibility = Visibility.none
 
 
 class ProgressiveTasks(Toggle):
@@ -57,6 +53,7 @@ class ProgressiveTasks(Toggle):
     a lower variety of tasks.
     """
     display_name = "Progressive Tasks"
+    visibility = Visibility.none
 
 
 class EnableDuds(Toggle):
@@ -64,6 +61,7 @@ class EnableDuds(Toggle):
     Whether to include filler "Dud" items that serve no purpose but allow for more tasks in the pool.
     """
     display_name = "Enable Duds"
+    visibility = Visibility.none
 
 
 class DudCount(Range):
@@ -71,6 +69,7 @@ class DudCount(Range):
     How many "Dud" items to include in the pool. This setting is ignored if "Enable Duds" is not included
     """
     display_name = "Dud Item Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = 30
     default = 10
@@ -83,6 +82,7 @@ class EnableCarePacks(Toggle):
     or gold to purchase off of the grand exchange.
     """
     display_name = "Enable Care Packs"
+    visibility = Visibility.none
 
 class MaxCombatLevel(Range):
     """
@@ -90,6 +90,7 @@ class MaxCombatLevel(Range):
     If set to 0, no combat tasks will be generated.
     """
     display_name = "Max Required Enemy Combat Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 1520
     default = 50
@@ -102,6 +103,7 @@ class MaxCombatTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Combat Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_COMBAT_TASKS
     default = MAX_COMBAT_TASKS
@@ -114,6 +116,7 @@ class CombatTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Combat Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -125,6 +128,7 @@ class MaxPrayerLevel(Range):
     If set to 0, no Prayer tasks will be generated.
     """
     display_name = "Max Required Prayer Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -137,6 +141,7 @@ class MaxPrayerTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Prayer Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_PRAYER_TASKS
     default = MAX_PRAYER_TASKS
@@ -149,6 +154,7 @@ class PrayerTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Prayer Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -160,6 +166,7 @@ class MaxMagicLevel(Range):
     If set to 0, no Magic tasks will be generated.
     """
     display_name = "Max Required Magic Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -172,6 +179,7 @@ class MaxMagicTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Magic Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_MAGIC_TASKS
     default = MAX_MAGIC_TASKS
@@ -184,6 +192,7 @@ class MagicTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Magic Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -195,6 +204,7 @@ class MaxRunecraftLevel(Range):
     If set to 0, no Runecraft tasks will be generated.
     """
     display_name = "Max Required Runecraft Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -207,6 +217,7 @@ class MaxRunecraftTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Runecraft Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_RUNECRAFT_TASKS
     default = MAX_RUNECRAFT_TASKS
@@ -219,6 +230,7 @@ class RunecraftTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Runecraft Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -230,6 +242,7 @@ class MaxCraftingLevel(Range):
     If set to 0, no Crafting tasks will be generated.
     """
     display_name = "Max Required Crafting Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -242,6 +255,7 @@ class MaxCraftingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Crafting Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_CRAFTING_TASKS
     default = MAX_CRAFTING_TASKS
@@ -254,6 +268,7 @@ class CraftingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Crafting Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -265,6 +280,7 @@ class MaxMiningLevel(Range):
     If set to 0, no Mining tasks will be generated.
     """
     display_name = "Max Required Mining Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -277,6 +293,7 @@ class MaxMiningTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Mining Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_MINING_TASKS
     default = MAX_MINING_TASKS
@@ -289,6 +306,7 @@ class MiningTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Mining Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -300,6 +318,7 @@ class MaxSmithingLevel(Range):
     If set to 0, no Smithing tasks will be generated.
     """
     display_name = "Max Required Smithing Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -312,6 +331,7 @@ class MaxSmithingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Smithing Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_SMITHING_TASKS
     default = MAX_SMITHING_TASKS
@@ -324,6 +344,7 @@ class SmithingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Smithing Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -335,6 +356,7 @@ class MaxFishingLevel(Range):
     If set to 0, no Fishing tasks will be generated.
     """
     display_name = "Max Required Fishing Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -347,6 +369,7 @@ class MaxFishingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Fishing Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_FISHING_TASKS
     default = MAX_FISHING_TASKS
@@ -359,6 +382,7 @@ class FishingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Fishing Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -370,6 +394,7 @@ class MaxCookingLevel(Range):
     If set to 0, no Cooking tasks will be generated.
     """
     display_name = "Max Required Cooking Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -382,6 +407,7 @@ class MaxCookingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Cooking Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_COOKING_TASKS
     default = MAX_COOKING_TASKS
@@ -394,6 +420,7 @@ class CookingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Cooking Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -405,6 +432,7 @@ class MaxFiremakingLevel(Range):
     If set to 0, no Firemaking tasks will be generated.
     """
     display_name = "Max Required Firemaking Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -417,6 +445,7 @@ class MaxFiremakingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Firemaking Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_FIREMAKING_TASKS
     default = MAX_FIREMAKING_TASKS
@@ -429,6 +458,7 @@ class FiremakingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Firemaking Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -440,6 +470,7 @@ class MaxWoodcuttingLevel(Range):
     If set to 0, no Woodcutting tasks will be generated.
     """
     display_name = "Max Required Woodcutting Level"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -452,6 +483,7 @@ class MaxWoodcuttingTasks(Range):
     This only determines the maximum possible, fewer than the maximum could be assigned.
     """
     display_name = "Max Woodcutting Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = MAX_WOODCUTTING_TASKS
     default = MAX_WOODCUTTING_TASKS
@@ -464,6 +496,7 @@ class WoodcuttingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Woodcutting Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -476,6 +509,7 @@ class MinimumGeneralTasks(Range):
     there is no maximum.
     """
     display_name = "Minimum General Task Count"
+    visibility = Visibility.none
     range_start = 0
     range_end = NON_QUEST_LOCATION_COUNT
     default = 10
@@ -488,6 +522,7 @@ class GeneralTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "General Task Weight"
+    visibility = Visibility.none
     range_start = 0
     range_end = 99
     default = 50
@@ -496,6 +531,7 @@ class GeneralTaskWeight(Range):
 @dataclass
 class OSRSOptions(PerGameCommonOptions):
     starting_area: StartingArea
+    goal_location: GoalLocation
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds

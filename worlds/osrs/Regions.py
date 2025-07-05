@@ -32,6 +32,7 @@ class LocationRow(NamedTuple):
     rule: list[RuleElement]
     kudos_reward: int
     quest_point_reward: int
+    combat_point_reward: int
 
 class EntranceRow(NamedTuple):
     source: str
@@ -42,4 +43,6 @@ class TrainingRow(NamedTuple):
     product: str
     skill_name: str
     required_level: int
+    parent_region: str
+    task_name: str
     rule: list[RuleElement]

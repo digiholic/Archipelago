@@ -34,6 +34,7 @@ class LocationRow(NamedTuple):
     rule: list[RuleElement]
     kudos_reward: int
     quest_point_reward: int
+    combat_point_reward: int
 
 class EntranceRow(NamedTuple):
     source: str
@@ -44,6 +45,8 @@ class TrainingRow(NamedTuple):
     product: str
     skill_name: str
     required_level: int
+    parent_region: str
+    task_name: str
     rule: list[RuleElement]
 
 
@@ -61,7 +64,7 @@ regions:dict[str, str] = {}
 f2p_skill_names:list[str]=[
     "Attack","Strength","Defence","Ranged","Prayer","Magic","Runecraft",
     "Hitpoints","Crafting","Mining","Smithing","Fishing","Cooking",
-    "Firemaking","Woodcutting"
+    "Firemaking","Woodcutting","Combat"
 ]
 skill_names:list[str]=f2p_skill_names+[
     "Agility","Herblore","Thieving","Fletching","Slayer","Farming","Construction","Hunter"
@@ -73,7 +76,7 @@ non_skill_task_types:list[str]=[
 bidirectional_groups:list[str]=[
     "Agility potion[+]","Antidote+[+]","Antidote++[+]","Antifire potion[+]","Defence potion[+]",
     "Magic potion[+]","Ranging potion[+]","Restore potion[+]","Super attack[+]","Super defence[+]",
-    "Super strength[+]","Waterskin[+]","Watering can[+]","Super energy[+]","Anti-venom+[+]",
+    "Super strength[+]","Waterskin[+]","Watering cans[+]","Super energy[+]","Anti-venom+[+]",
     "Bastion potion[+]","Battlemage potion[+]","Super combat potion[+]","Super restore[+]",
     "Ancient brew[+]","Superantipoison[+]","Combat potion[+]","Fishing potion[+]","Hunter potion[+]",
     "Magic essence[+]","Prayer potion[+]","Relicym's balm[+]","Stamina potion[+]","Strength potion[+]",
@@ -119,6 +122,7 @@ banned_tasks:list[str]=[
     "Armour Case: ~|Giant stopwatch|~","Magic Wardrobe: ~|Dark infinity hat|~","Magic Wardrobe: ~|Dark infinity top|~","Magic Wardrobe: ~|Dark infinity bottoms|~",
     "Magic Wardrobe: ~|Light infinity hat|~","Magic Wardrobe: ~|Light infinity top|~","Magic Wardrobe: ~|Light infinity bottoms|~","Magic Wardrobe: ~|Mystic hat (or)|~",
     "Magic Wardrobe: ~|Mystic robe top (or)|~","Magic Wardrobe: ~|Mystic robe bottom (or)|~","Magic Wardrobe: ~|Mystic gloves (or)|~","Magic Wardrobe: ~|Mystic boots (or)|~",
+    "F2P Only"
 
 
 ]
@@ -214,6 +218,7 @@ monster_rows.append(MonsterRow("kill_Monster[+]","Macro",[]))
 ee_entrances.append(EntranceRow("Seed[+]","Hespori seed",[]))
 resources.append("Hespori seed")
 resource_list.append(ResourceRow("Hespori seed"))
+
 regions["Victory"]="Victory"
 regions["Nothing :("] = "Nothing :("
 
@@ -349,7 +354,8 @@ def chunk_init(chunk_name,chunk_id,chunk):
 with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as localJSON:
     exportedJSON = json.load(localJSON)
     for slayer_monster, slayer_level in exportedJSON["slayerMonsters"].items():
-        slayer_level_req[slayer_monster] = slayer_level
+        if slayer_level>1:
+            slayer_level_req[slayer_monster] = slayer_level
     for chunk_id,chunk in exportedJSON["chunks"].items():
         chunk_name = ""
         if "Nickname" in chunk:
@@ -550,11 +556,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             rule_list.append(RuleElement("task",req))
                 if "Skills" in quest_data:
                     for skill,skill_level in quest_data["Skills"].items():
-                        rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
+                        if skill_level > 1:
+                            rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
                 if "Chunks" in quest_data:
                     for chunk in quest_data["Chunks"]:
                         if "[+]" in chunk and not chunk.endswith("[+]"):
                             chunk,_ = chunk.rsplit("x",1)
+                            #todo fix this
                         chunk = convert_chunk_id(chunk)
                         if chunk not in chunks:
                             chunk = chunk+"-1"
@@ -580,6 +588,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         if "[+]" in item and not item.endswith("[+]"):
                             try:
                                 item,_ = item.rsplit("x",1)
+                                #todo fix this
                             except:
                                 breakpoint()
                         if parent_region is None:
@@ -595,7 +604,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     rule_list.append(RuleElement("questPoints",str(quest_data["QuestPointsNeeded"])))
                 if "KudosNeeded" in quest_data:
                     rule_list.append(RuleElement("kudos",str(quest_data["KudosNeeded"])))
-                #todo CombatPointsNeeded
+                if "CombatPointsNeeded" in quest_data:
+                    rule_list.append(RuleElement("combatPoints",str(quest_data["CombatPointsNeeded"])))
                 if "Reward" in quest_data:
                     for item in quest_data["Reward"]:
                         if item not in resources:
@@ -606,15 +616,17 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         re_entrances.append(EntranceRow("Menu",item,rule_list))
                 kudos_reward = 0
                 quest_point_reward = 0
+                combat_point_reward = 0
                 if "QuestPoints" in quest_data:
                     quest_point_reward = int(quest_data["QuestPoints"])
                 if "Kudos" in quest_data:
                     kudos_reward = int(quest_data["Kudos"])
-                #todo CombatPoints
+                if "CombatPoints" in quest_data:
+                    combat_point_reward = int(quest_data["CombatPoints"])
                 if parent_region:
                     parent_region = parent_region.rstrip("*")
                     rule_list = [value for value in rule_list if value.value != parent_region]
-                target_list.append(LocationRow(quest_name,category,parent_region,rule_list,kudos_reward,quest_point_reward))
+                target_list.append(LocationRow(quest_name,category,parent_region,rule_list,kudos_reward,quest_point_reward,combat_point_reward))
                 for field in quest_data.keys():
                     if field not in [
                         "BaseQuest","Description","NPCs","Tasks","Items","Not F2P",
@@ -625,9 +637,6 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         print(field)
                         print(quest_name)
                         breakpoint()
-        elif task_type == "Combat":
-            #todo
-            pass
         elif task_type in skill_names:
             for task_name, task_data in task_list.items():
                 if task_name in banned_tasks:
@@ -653,7 +662,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             parent_region = npc
                         rule_list.append(RuleElement("can_reach",npc))
                 if "Level" in task_data:
-                    rule_list.append(RuleElement("skill",f"{task_type}_{str(task_data["Level"])}"))
+                    if task_data["Level"]>1:
+                        rule_list.append(RuleElement("skill",f"{task_type}_{str(task_data["Level"])}"))
                 if "Objects" in task_data:
                     for object in task_data["Objects"]:
                         if parent_region is None:
@@ -661,7 +671,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("can_reach",object))
                 if "Skills" in task_data:
                     for skill,skill_level in task_data["Skills"].items():
-                        rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
+                        if skill_level>1:
+                            rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
                 if "Items" in task_data:
                     for item in task_data["Items"]:
                         item = item.rstrip("*")
@@ -696,6 +707,11 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             monster_rows.append(MonsterRow(monster,monster_category,[]))
                             monster_to_find.remove(monster)
                         rule_list.append(RuleElement("kill",monster))
+                if parent_region:
+                    parent_region = parent_region.rstrip("*")
+                    rule_list = [value for value in rule_list if value.value != parent_region]
+                else:
+                    parent_region = "Menu"
                 if "Primary" in task_data and task_data["Primary"]:
                     #primary training method
                     output = "None"
@@ -704,13 +720,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         output = task_data["Output"]
                     if "Level" in task_data:
                         level = task_data["Level"]
-                    if output != "None" and output in training_outputs:
-                        if output not in dupe_training_methods:
-                            dupe_training_methods.append(output)
-                        continue
-                    else:
-                        training_methods.append(TrainingRow(output,task_type,level,rule_list))
-                        if output != "None": training_outputs.append(output)
+                    training_methods.append(TrainingRow(output,task_type,level,parent_region,task_name,rule_list))
+                    if output != "None": training_outputs.append(output)
                 if task_name in non_quest_names: #have to do it down here so we can do training methods
                     if task_name not in non_quest_dupes:
                         non_quest_dupes.append(task_name)
@@ -737,10 +748,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     if output_obj in missing_resources:
                         missing_resources.remove(output_obj)
                     re_entrances.append(EntranceRow("Menu",output_obj,rule_list))
-                if parent_region:
-                    parent_region = parent_region.rstrip("*")
-                    rule_list = [value for value in rule_list if value.value != parent_region]
-                non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,0,0))
+                non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,0,0,0))
                 non_quest_names.append(task_name)
                 for field in task_data.keys():
                     if field not in [
@@ -762,6 +770,9 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         non_quest_dupes.append(task_name)
                     continue #for now just ignore duplicates and hope they go away
                 if "Category" in task_data and "Collection Log Clues" in task_data["Category"]:
+                    continue
+                if "Category" in task_data and "Starting Items" in task_data["Category"] and "Output" in task_data:
+                    re_entrances.append(EntranceRow("Menu",task_data["Output"],[]))
                     continue
                 parent_region = None
                 rule_list = []
@@ -794,7 +805,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("can_reach",object))
                 if "Skills" in task_data:
                     for skill,skill_level in task_data["Skills"].items():
-                        rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
+                        if skill_level>1:
+                            rule_list.append(RuleElement("skill",f"{skill}_{str(skill_level)}"))
                 if "Items" in task_data:
                     for item in task_data["Items"]:
                         item = item.rstrip("*")
@@ -809,7 +821,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                                 if req not in task_macros:
                                     print(req)
                                     breakpoint()
-                                rule_list.append(RuleElement("task_macrox",req+count))
+                                rule_list.append(RuleElement("task_macrox"+count,req))
                             else:
                                 if req not in task_macros:
                                     print(req)
@@ -832,7 +844,6 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "QuestPointsNeeded" in task_data:
                     rule_list.append(RuleElement("questPoints",str(task_data["QuestPointsNeeded"])))
                 #todo: TotalLevelNeeded
-                #todo: CombatLevelNeeded
                 if "Output" in task_data:
                     output = task_data["Output"]
                     if output not in resources:
@@ -914,7 +925,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     if parent_region:
                         parent_region = parent_region.rstrip("*")
                         rule_list = [value for value in rule_list if value.value != parent_region]
-                    non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,kudos_reward,0))
+                    non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,kudos_reward,0,0))
                     non_quest_names.append(task_name)
                 for field in task_data.keys():
                     if field not in [
@@ -923,7 +934,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             "Tasks","NPCs","Not Equip","AlwaysValid","Output Object","Kudos",
                             "NoXp","Monsters","BackupParent","ManualInvalid","UnlocksArea",
                             "ManualNonProcessing","Source","InfoLink","ConnectsSections","Sections",
-                            "QuestPointsNeeded","TotalLevelNeeded","CombatLevelNeeded","Reward",
+                            "QuestPointsNeeded","TotalLevelNeeded","Reward",
                             "ForcedSecondary","ClueTier","ClueType","StarRegion","Label","Requirements",
                             "Not Skiller","RequiredMonsterSource"
                         ]:
@@ -1087,6 +1098,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += str(quest_row.kudos_reward)
                 row_line += ","
                 row_line += str(quest_row.quest_point_reward)
+                row_line += ","
+                row_line += str(quest_row.combat_point_reward)
                 row_line += ")"
                 regPyFile.write(f"\t{row_line},\n")
             
@@ -1107,6 +1120,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += str(quest_row.kudos_reward)
                 row_line += ","
                 row_line += str(quest_row.quest_point_reward)
+                row_line += ","
+                row_line += str(quest_row.combat_point_reward)
                 row_line += ")"
                 regPyFile.write(f"\t{row_line},\n")
             
@@ -1127,6 +1142,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += str(location_row.kudos_reward)
                 row_line += ","
                 row_line += str(location_row.quest_point_reward)
+                row_line += ","
+                row_line += str(location_row.combat_point_reward)
                 row_line += ")"
                 regPyFile.write(f"\t{row_line},\n")
             
@@ -1143,6 +1160,10 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += str_format(training_method.skill_name)
                 row_line += ","
                 row_line += str(training_method.required_level)
+                row_line += ","
+                row_line += str_format(training_method.parent_region)
+                row_line += ","
+                row_line += str_format(training_method.task_name)
                 row_line += ","
                 row_line += str_rules(training_method.rule)
                 row_line += ")"
@@ -1186,6 +1207,17 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += ",[])"
                 regPyFile.write(f"\t{row_line},\n")
             
+            regPyFile.write("]\n\n")
+
+            regPyFile.write("task_macros: dict[str, list[str]] = {\n")
+            for task_macro,task_macro_list in task_macros.items():
+                regPyFile.write(f"\t{str_format(task_macro)}:[{",".join([str_format(i) for i in task_macro_list])}],\n")
+            regPyFile.write("}\n\n")
+                
+            
+            regPyFile.write("skill_names: list[str] = [")
+            for skill_name in skill_names:
+                regPyFile.write(f"{str_format(skill_name)},")
             regPyFile.write("]\n\n")
 
             regPyFile.write("missing_items: list[str] = [\n")
