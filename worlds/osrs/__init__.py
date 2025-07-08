@@ -100,19 +100,6 @@ class OSRSWorld(RuleWorldMixin, World):
         data["starting_area"] = str(self.starting_area_item) #these aren't actually strings, they just play them on tv
         return data
 
-    def interpret_slot_data(self, slot_data: typing.Dict[str, typing.Any]) -> None:
-        if "starting_area" in slot_data:
-            self.starting_area_item = slot_data["starting_area"]
-            menu_region = self.multiworld.get_region("Menu",self.player)
-            menu_region.exits.clear() #prevent making extra exits if players just reconnect to a differnet slot
-            if self.starting_area_item in chunksanity_special_region_names:
-                starting_area_region = chunksanity_special_region_names[self.starting_area_item]
-            else:
-                starting_area_region = self.starting_area_item[6:]  # len("Area: ")
-            starting_entrance = menu_region.create_exit(f"Start->{starting_area_region}")
-            starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
-            starting_entrance.connect(self.region_name_to_data[starting_area_region])
-
     def parse_rule(self, rule_element: RuleElement):
         if rule_element.type == "has": #literal ap item has
             return Has(rule_element.value)
@@ -206,6 +193,12 @@ class OSRSWorld(RuleWorldMixin, World):
             self.create_location(sub_location)
         for training_method in training_methods:
             self.create_training(training_method)
+
+        # place "Victory" at the option from the yaml
+
+        goal_location_name = self.options.goal_location.value if self.options.goal_location.value in self.location_name_to_id else "~|Dragon Slayer I|~ Complete the quest"
+
+        self.multiworld.get_location(goal_location_name, self.player).place_locked_item(self.create_item("Area: Victory"))
 
         #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
     
@@ -389,18 +382,12 @@ class OSRSWorld(RuleWorldMixin, World):
                 if rule is not None:
                     self.set_rule(method,rule)
 
-        # place "Victory" at "Dragon Slayer" and set collection as win condition
-
-        goal_location_name = self.options.goal_location.value if self.options.goal_location.value in self.location_name_to_id else "~|Dragon Slayer I|~ Complete the quest"
-
-        self.multiworld.get_location(goal_location_name, self.player) \
-            .place_locked_item(self.create_item("Area: Victory"))
         self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
 
     def create_items(self) -> None:
         itempool = []
         for item_row in item_rows:
-            if item_row.name not in ["Area: Victory", self.starting_area_item]:
+            if item_row.name not in ["Area: Victory",self.starting_area_item]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
                     itempool.append(item)
@@ -434,6 +421,7 @@ class OSRSWorld(RuleWorldMixin, World):
         region.locations.append(location)
 
         if location_row.category == "subquest":
+            location.show_in_spoiler = False
             location.place_locked_item(self.create_event(location_row.name))
         else:
             fake_location = OSRSLocation(self.player,location_row.name+" event",None)

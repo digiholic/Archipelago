@@ -122,7 +122,9 @@ banned_tasks:list[str]=[
     "Armour Case: ~|Giant stopwatch|~","Magic Wardrobe: ~|Dark infinity hat|~","Magic Wardrobe: ~|Dark infinity top|~","Magic Wardrobe: ~|Dark infinity bottoms|~",
     "Magic Wardrobe: ~|Light infinity hat|~","Magic Wardrobe: ~|Light infinity top|~","Magic Wardrobe: ~|Light infinity bottoms|~","Magic Wardrobe: ~|Mystic hat (or)|~",
     "Magic Wardrobe: ~|Mystic robe top (or)|~","Magic Wardrobe: ~|Mystic robe bottom (or)|~","Magic Wardrobe: ~|Mystic gloves (or)|~","Magic Wardrobe: ~|Mystic boots (or)|~",
-    "F2P Only"
+    "F2P Only","Obtain a ~|Golden Gnome|~","Buy the 1st upgrade to ~|bank space|~ for 1m","Buy the 2nd upgrade to ~|bank space|~ for 2m","Buy the 3rd upgrade to ~|bank space|~ for 5m",
+    "Buy the 4th upgrade to ~|bank space|~ for 10m","Buy the 5th upgrade to ~|bank space|~ for 20m","Buy the 6th upgrade to ~|bank space|~ for 50m","Buy the 7th upgrade to ~|bank space|~ for 100m",
+    "Buy the 8th upgrade to ~|bank space|~ for 200m","Buy the 9th upgrade to ~|bank space|~ for 500m","Trade-in for platinum token*","Build a ~|tip jar|~"
 
 
 ]
@@ -174,7 +176,8 @@ banned_chunks: list[str] = [
     "chunk_13726","chunk_13641","chunk_13642","chunk_13643","chunk_13644","chunk_13645","chunk_13646","chunk_13647","chunk_13658","chunk_13659",
     "chunk_13914","chunk_13915","chunk_14154","chunk_14393","chunk_13977","chunk_13978","chunk_14232","chunk_14233","chunk_14487","chunk_14488",
     "chunk_13721","chunk_14653","chunk_14654","chunk_14909","chunk_14910","chunk_14999","chunk_15000","chunk_15001","chunk_15255","chunk_15256",
-    "chunk_15257","chunk_15511","chunk_15512","chunk_15513","chunk_15262","chunk_15263","chunk_15515","chunk_11605","chunk_13197"
+    "chunk_15257","chunk_15511","chunk_15512","chunk_15513","chunk_15262","chunk_15263","chunk_15515","chunk_11605","chunk_13197","chunk_11595",
+    "chunk_7257"
 ]
 
 banned_drop_items:list[str]=[
@@ -182,7 +185,13 @@ banned_drop_items:list[str]=[
     "Dagannoth mother","Damis","Demon of Balance","Demon of Darkness","Demon of Light","Derwen","Durial321","Evil Chicken (Recipe for Disaster)",
     "Forgotten Soul (Soul Wars)","Gang boss","Gangster","Giant Sea Snake","Glod","Golem","Justiciar Zachariah","Kebbit","Nazastarool",
     "Nylocas Vasilias","Pestilent Bloat","Pheasant","Porazdir","Shaeded Beast","Slash Bash","Sotetseg","The Maiden of Sugadinti","The Mimic",
-    "Undead Zealot","Verzik Vitur","Wolf (Soul Wars)","Xarpus","Zombie (Zogre Flesh Eaters)"
+    "Undead Zealot","Verzik Vitur","Wolf (Soul Wars)","Xarpus","Zombie (Zogre Flesh Eaters)","Tanglefoot"
+]
+
+banned_thieving_objects:list[str]=[
+    "Anja","Agnar","Berry","Borrokar","Cuffs","Curator Haig Halen","Dr Fenkenstrain","Drunken man","Fairy Godfather","Freidir","Gnome child",
+    "Gnome woman","Guard (Shayzien)","Head Guard","Hengel","Inga","Jeff","Jennella","Lanzig","Lensa","Narf","Pontak","Sandy","Sassilik",
+    "Sigmund","Student","Guard (Hosidius)","Twig","Woman","Zealot","Rusty"
 ]
 
 quest_list:list[LocationRow] = []
@@ -204,20 +213,18 @@ mm_entrances: list[EntranceRow] = []
 
 task_macros: dict[str,list[str]] = {}
 
-slayer_level_req: dict[str:int] = {}
+slayer_level_req: dict[str,int] = {}
 
 monster_rows: list[MonsterRow] = []
 non_monster_rows: list[MonsterRow] = []
+non_monster_names: list[str] = []
 
 defered_region_connections: list[tuple[str,str]] = []
 
 # todo : fix this later but for now have some manually placed entrances
+# todo : fix implied telegrab e.g. ardougne zoo jogre
 
 monster_rows.append(MonsterRow("kill_Monster[+]","Macro",[]))
-
-ee_entrances.append(EntranceRow("Seed[+]","Hespori seed",[]))
-resources.append("Hespori seed")
-resource_list.append(ResourceRow("Hespori seed"))
 
 regions["Victory"]="Victory"
 regions["Nothing :("] = "Nothing :("
@@ -249,6 +256,9 @@ def convert_chunk_id(id:str)->str:
 def convert_monster_name(name:str)->str:
     return f"kill_{name}"
 
+def convert_loot_name(name:str)->str:
+    return f"loot_{name}"
+
 def convert_drop_table(drop_table):
     return_table = {}
     for key, value in drop_table.items():
@@ -264,6 +274,8 @@ def iterate_drop_table(drop_table):
     if set(drop_table.keys()).intersection(banned_drop_items):
         return [] #if there is any key that's on the banned list, quit out early
     for drop_item, rates_table in drop_table.items():
+        if drop_item in non_monster_names:
+            drop_item = convert_loot_name(drop_item)
         noted_rate = 0
         raw_rate = 0
         for quant, rate in rates_table.items():
@@ -456,6 +468,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
     for macro_name, macro_list in exportedJSON["codeItems"]["dropTables"].items():
         if macro_name in banned_drop_items:
             continue
+        non_monster_names.append(macro_name)
+        macro_name = convert_loot_name(macro_name)
         if macro_name not in resources:
             resources.append(macro_name)
             resource_list.append(ResourceRow(macro_name))
@@ -476,8 +490,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
         for drop_source, drop_table in drop_tables.items():
             if drop_source in banned_drop_items:
                 continue
+            if category == "Thieving" and drop_source in banned_thieving_objects:
+                continue
             drop_list = iterate_drop_table(drop_table)
             if drop_list:
+                non_monster_names.append(drop_source)
+                old_drop_source = drop_source
+                drop_source = convert_loot_name(drop_source)
                 if drop_source not in resources:
                     resources.append(drop_source)
                     resource_list.append(ResourceRow(drop_source))
@@ -485,15 +504,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "#" in drop_source:
                     drop_source_category = drop_source_category.split("#")[0] #just want the first section
                 non_monster_rows.append(MonsterRow(drop_source,drop_source_category,drop_list))
-                if category == "Slayer" and convert_monster_name(drop_source) in monster_to_find:
-                    monster_name = convert_monster_name(drop_source)
+                if category == "Slayer" and convert_monster_name(old_drop_source) in monster_to_find:
+                    monster_name = convert_monster_name(old_drop_source)
                     monster_to_find.remove(monster_name)
                     if monster_name not in resources:
                         resources.append(monster_name)
                         resource_list.append(ResourceRow(monster_name))
                     rule_list = []
-                    if drop_source in slayer_level_req:
-                        rule_list.append(RuleElement("skill",f"Slayer_{str(slayer_level_req[drop_source])}"))
+                    if old_drop_source in slayer_level_req:
+                        rule_list.append(RuleElement("skill",f"Slayer_{str(slayer_level_req[old_drop_source])}"))
                     me_entrances.append(EntranceRow(monster_name,drop_source,rule_list)) 
     for drop_source, drop_table in exportedJSON["drops"].items():
         if drop_source in banned_drop_items:
@@ -600,6 +619,11 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         if parent_region is None:
                             parent_region = monster
                         rule_list.append(RuleElement("kill",monster))
+                if parent_region:
+                    parent_region = parent_region.rstrip("*")
+                    rule_list = [value for value in rule_list if value.value != parent_region]
+                else:
+                    parent_region = "Menu"
                 if "QuestPointsNeeded" in quest_data:
                     rule_list.append(RuleElement("questPoints",str(quest_data["QuestPointsNeeded"])))
                 if "KudosNeeded" in quest_data:
@@ -613,7 +637,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             resource_list.append(ResourceRow(item))
                         if item in missing_resources:
                             missing_resources.remove(item)
-                        re_entrances.append(EntranceRow("Menu",item,rule_list))
+                        re_entrances.append(EntranceRow(parent_region,item,rule_list))
                 kudos_reward = 0
                 quest_point_reward = 0
                 combat_point_reward = 0
@@ -623,9 +647,6 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     kudos_reward = int(quest_data["Kudos"])
                 if "CombatPoints" in quest_data:
                     combat_point_reward = int(quest_data["CombatPoints"])
-                if parent_region:
-                    parent_region = parent_region.rstrip("*")
-                    rule_list = [value for value in rule_list if value.value != parent_region]
                 target_list.append(LocationRow(quest_name,category,parent_region,rule_list,kudos_reward,quest_point_reward,combat_point_reward))
                 for field in quest_data.keys():
                     if field not in [
@@ -644,6 +665,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "Category" in task_data and "Quest Skill Reqs" in task_data["Category"]:
                     continue #these aren't real, and aren't needed
                 parent_region = None
+                parent_region_type = None
                 rule_list = []
                 if "Chunks" in task_data:
                     for chunk in task_data["Chunks"]:
@@ -655,11 +677,13 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                                 breakpoint()
                         if parent_region is None:
                             parent_region = chunk
+                            parent_region_type = "r"
                         rule_list.append(RuleElement("chunk",chunk))
                 if "NPCs" in task_data:
                     for npc in task_data["NPCs"]:
                         if parent_region is None:
                             parent_region = npc
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",npc))
                 if "Level" in task_data:
                     if task_data["Level"]>1:
@@ -668,6 +692,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     for object in task_data["Objects"]:
                         if parent_region is None:
                             parent_region = object
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",object))
                 if "Skills" in task_data:
                     for skill,skill_level in task_data["Skills"].items():
@@ -678,6 +703,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         item = item.rstrip("*")
                         if parent_region is None:
                             parent_region = item
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
@@ -700,6 +726,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         monster = convert_monster_name(monster)
                         if parent_region is None:
                             parent_region = monster
+                            parent_region_type = "m"
                         if monster in monster_to_find:
                             monster_category:str = monster
                             if "#" in monster:
@@ -712,6 +739,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     rule_list = [value for value in rule_list if value.value != parent_region]
                 else:
                     parent_region = "Menu"
+                    parent_region_type = "r"
                 if "Primary" in task_data and task_data["Primary"]:
                     #primary training method
                     output = "None"
@@ -728,6 +756,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     continue #for now just ignore it and hope it goes away (it won't)
                 if "Output" in task_data:
                     output = task_data["Output"]
+                    if output in non_monster_names:
+                        output = convert_loot_name(output)
                     if output not in resources:
                         if output in regions:
                             print(output)
@@ -736,7 +766,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output))
                     if output in missing_resources:
                         missing_resources.remove(output)
-                    re_entrances.append(EntranceRow("Menu",output,rule_list))
+                    if parent_region_type == "r":
+                        re_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    elif parent_region_type == "e":
+                        ee_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    elif parent_region_type == "m":
+                        me_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    else:
+                        print(task_name)
+                        breakpoint()
                 if "Output Object" in task_data:
                     output_obj = task_data["Output Object"]
                     if output_obj not in resources:
@@ -747,7 +785,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output_obj))
                     if output_obj in missing_resources:
                         missing_resources.remove(output_obj)
-                    re_entrances.append(EntranceRow("Menu",output_obj,rule_list))
+                    if parent_region_type == "r":
+                        re_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    elif parent_region_type == "e":
+                        ee_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    elif parent_region_type == "m":
+                        me_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    else:
+                        print(task_name)
+                        breakpoint()
                 non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,0,0,0))
                 non_quest_names.append(task_name)
                 for field in task_data.keys():
@@ -775,6 +821,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     re_entrances.append(EntranceRow("Menu",task_data["Output"],[]))
                     continue
                 parent_region = None
+                parent_region_type = None
                 rule_list = []
                 if "ForcedSecondary" in task_data and task_data["ForcedSecondary"]:
                     continue #Used in sources that aren't real but technically exist... just ignore them
@@ -792,16 +839,19 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                                 breakpoint()
                         if parent_region is None:
                             parent_region = chunk
+                            parent_region_type = "r"
                         rule_list.append(RuleElement("chunk",chunk))
                 if "NPCs" in task_data:
                     for npc in task_data["NPCs"]:
                         if parent_region is None:
                             parent_region = npc
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",npc))
                 if "Objects" in task_data:
                     for object in task_data["Objects"]:
                         if parent_region is None:
                             parent_region = object
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",object))
                 if "Skills" in task_data:
                     for skill,skill_level in task_data["Skills"].items():
@@ -812,6 +862,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         item = item.rstrip("*")
                         if parent_region is None:
                             parent_region = item
+                            parent_region_type = "e"
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
@@ -834,6 +885,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         monster = convert_monster_name(monster)
                         if parent_region is None:
                             parent_region = monster
+                            parent_region_type = "m"
                         if monster in monster_to_find:
                             monster_category:str = monster
                             if "#" in monster:
@@ -843,9 +895,17 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("kill",monster))
                 if "QuestPointsNeeded" in task_data:
                     rule_list.append(RuleElement("questPoints",str(task_data["QuestPointsNeeded"])))
+                if parent_region:
+                    parent_region = parent_region.rstrip("*")
+                    rule_list = [value for value in rule_list if value.value != parent_region]
+                else:
+                    parent_region = "Menu"
+                    parent_region_type = "r"
                 #todo: TotalLevelNeeded
                 if "Output" in task_data:
                     output = task_data["Output"]
+                    if output in non_monster_names:
+                        output = convert_loot_name(output)
                     if output not in resources:
                         if output in regions:
                             print(output)
@@ -855,7 +915,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output))
                     if output in missing_resources:
                         missing_resources.remove(output)
-                    re_entrances.append(EntranceRow("Menu",output,rule_list))
+                    if parent_region_type == "r":
+                        re_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    elif parent_region_type == "e":
+                        ee_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    elif parent_region_type == "m":
+                        me_entrances.append(EntranceRow(parent_region,output,rule_list))
+                    else:
+                        print(task_name)
+                        breakpoint()
                 if "Output Object" in task_data:
                     output_obj = task_data["Output Object"]
                     if output_obj not in resources:
@@ -866,7 +934,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output_obj))
                     if output_obj in missing_resources:
                         missing_resources.remove(output_obj)
-                    re_entrances.append(EntranceRow("Menu",output_obj,rule_list))
+                    if parent_region_type == "r":
+                        re_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    elif parent_region_type == "e":
+                        ee_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    elif parent_region_type == "m":
+                        me_entrances.append(EntranceRow(parent_region,output_obj,rule_list))
+                    else:
+                        print(task_name)
+                        breakpoint()
                 if "Reward" in task_data:
                     for item in task_data["Reward"]:
                         if item not in resources:
@@ -874,7 +950,15 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                             resource_list.append(ResourceRow(item))
                         if item in missing_resources:
                             missing_resources.remove(item)
-                        re_entrances.append(EntranceRow("Menu",item,rule_list))
+                        if parent_region_type == "r":
+                            re_entrances.append(EntranceRow(parent_region,item,rule_list))
+                        elif parent_region_type == "e":
+                            ee_entrances.append(EntranceRow(parent_region,item,rule_list))
+                        elif parent_region_type == "m":
+                            me_entrances.append(EntranceRow(parent_region,item,rule_list))
+                        else:
+                            print(task_name)
+                            breakpoint()
                 if "ConnectsSections" in task_data and task_data["ConnectsSections"]:
                     if "Sections" not in task_data:
                         print("PANIC!! " + task_name)
@@ -922,9 +1006,6 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "Kudos" in task_data:
                     kudos_reward = int(task_data["Kudos"])
                 if "ConnectsSections" not in task_data and "UnlocksArea" not in task_data: #don't make these as locations
-                    if parent_region:
-                        parent_region = parent_region.rstrip("*")
-                        rule_list = [value for value in rule_list if value.value != parent_region]
                     non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,kudos_reward,0,0))
                     non_quest_names.append(task_name)
                 for field in task_data.keys():
@@ -1238,6 +1319,11 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
             regPyFile.write("training_dupes: list[str] = [\n")
             for dupe_training in dupe_training_methods:
                 regPyFile.write(f"\t{str_format(dupe_training)},\n")
+            regPyFile.write("]\n\n")
+
+            regPyFile.write("non_monster_names: list[str] = [\n")
+            for non_monster_name in non_monster_names:
+                regPyFile.write(f"\t{str_format(non_monster_name)},\n")
             regPyFile.write("]\n\n")
 
 
