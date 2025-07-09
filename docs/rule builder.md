@@ -16,7 +16,7 @@ class MyWorld(RuleWorldMixin, World):
     game = "My Game"
 ```
 
-The rule builder comes with a few by default:
+The rule builder comes with a few rules by default:
 
 - `True_`: Always returns true
 - `False_`: Always returns false
@@ -25,6 +25,12 @@ The rule builder comes with a few by default:
 - `Has`: Checks that the player has the given item with the given count (default 1)
 - `HasAll`: Checks that the player has all given items
 - `HasAny`: Checks that the player has at least one of the given items
+- `HasAllCounts`: Checks that the player has all of the counts for the given items
+- `HasAnyCount`: Checks that the player has any of the counts for the given items
+- `HasFromList`: Checks that the player has some number of given items
+- `HasFromListUnique`: Checks that the player has some number of given items, ignoring duplicates of the same item
+- `HasGroup`: Checks that the player has some number of items from a given item group
+- `HasGroupUnique`: Checks that the player has some number of items from a given item group, ignoring duplicates of the same item
 - `CanReachLocation`: Checks that the player can logically reach the given location
 - `CanReachRegion`: Checks that the player can logically reach the given region
 - `CanReachEntrance`: Checks that the player can logically reach the given entrance
@@ -36,6 +42,8 @@ rule = Has("Movement ability") | HasAll("Key 1", "Key 2")
 ```
 
 > ⚠️ Composing rules with the `and` and `or` keywords will not work. You must use the bitwise `&` and `|` operators. In order to catch mistakes, the rule builder will not let you do boolean operations. As a consequence, in order to check if a rule is defined you must use `if rule is not None`.
+
+### Assigning rules
 
 When assigning the rule you must use the `set_rule` helper added by the rule mixin to correctly resolve and register the rule.
 
@@ -49,7 +57,15 @@ There is also a `create_entrance` helper that will resolve the rule, check if it
 self.create_entrance(from_region, to_region, rule)
 ```
 
-## Restricting options
+You can also set a rule for your world's completion condition:
+
+```python
+self.set_completion_rule(rule)
+```
+
+If your rules use `CanReachLocation`, `CanReachEntrance` or a custom rule that depends on locations or entrances, you must call `self.register_dependencies()` after all of your locations and entrances exist to setup the caching system.
+
+### Restricting options
 
 Every rule allows you to specify which options it's applicable for. You can provide the argument `options` which is an iterable of `OptionFilter` instances. If you want a comparison that isn't equals, you can specify with the `operator` arguemnt.
 
@@ -93,11 +109,22 @@ rule = Or(
 )
 ```
 
+### Disabling caching
+
+If your world's logic is very simple and you don't have many nested rules, the caching system may have more overhead cost than time it saves. You can disable the caching system entirely by setting the `rule_caching_enabled` class property to `False` on your world:
+
+```python
+class MyWorld(RuleWorldMixin, World):
+    rule_caching_enabled = False
+```
+
+You'll have to benchmark your own world to see if it should be disabled or not.
+
 ## Defining custom rules
 
 You can create a custom rule by creating a class that inherits from `Rule` or any of the default rules. You must provide the game name as an argument to the class. It's recommended to use the `@dataclass` decorator to reduce boilerplate to provide your world as a type argument to add correct type checking to the `_instantiate` method.
 
-You must provide or inherit a `Resolved` child class that defines an `_evaluate` method. This class will automatically be converted into a frozen `dataclass`. You may need to also define an `item_dependencies` or `region_dependencies` function.
+You must provide or inherit a `Resolved` child class that defines an `_evaluate` method. This class will automatically be converted into a frozen `dataclass`. You may need to also define one or more dependencies functions as outlined below.
 
 To add a rule that checks if the user has enough mcguffins to goal, with a randomized requirement:
 
@@ -132,7 +159,7 @@ class MyRule(Rule["MyWorld"], game="My Game"):
             return {self.item_name: {id(self)}}
 ```
 
-The default `Has`, `HasAll`, and `HasAny` rules define this function already.
+All of the default `Has*` rules define this function already.
 
 ### Region dependencies
 
@@ -151,50 +178,149 @@ class MyRule(Rule["MyWorld"], game="My Game"):
 
 The default `CanReachLocation`, `CanReachRegion`, and `CanReachEntrance` rules define this function already.
 
-## JSON serialization
+### Location dependencies
 
-The rule builder is intended to be written first in Python for optimization and type safety. To export the rules to a client or tracker, there is a default JSON serializer implementation for all rules. By default the rules will export with the following format:
+If your custom rule references other locations, it must define a `location_dependencies` function that returns a mapping of the location name to the id of your rule. These dependencies will be combined to inform the caching system.
 
-```json
+```python
+@dataclasses.dataclass()
+class MyRule(Rule["MyWorld"], game="My Game"):
+    class Resolved(Rule.Resolved):
+        location_name: str
+
+        @override
+        def location_dependencies(self) -> dict[str, set[int]]:
+            return {self.location_name: {id(self)}}
+```
+
+The default `CanReachLocation` rule defines this function already.
+
+### Entrance dependencies
+
+If your custom rule references other entrances, it must define a `entrance_dependencies` function that returns a mapping of the entrance name to the id of your rule. These dependencies will be combined to inform the caching system.
+
+```python
+@dataclasses.dataclass()
+class MyRule(Rule["MyWorld"], game="My Game"):
+    class Resolved(Rule.Resolved):
+        entrance_name: str
+
+        @override
+        def entrance_dependencies(self) -> dict[str, set[int]]:
+            return {self.entrance_name: {id(self)}}
+```
+
+The default `CanReachEntrance` rule defines this function already.
+
+## Serialization
+
+The rule builder is intended to be written first in Python for optimization and type safety. To facilitate exporting the rules to a client or tracker, rules have a `to_dict` method that returns a JSON-compatible dict. Since the location and entrance logic structure varies greatly from world to world, the actual JSON dumping is left up to the world dev.
+
+The dict contains a `rule` key with the name of the rule, an `options` key with the rule's list of option filters, and an `args` key that contains any other arguments the individual rule has. For example, this is what a simple `Has` rule would look like:
+
+```python
 {
-    "rule": "<name of rule>",
+    "rule": "Has",
+    "options": [],
     "args": {
-        "options": {...},
-        "<field>": <value> // for each field the rule defines
-    }
+        "item_name": "Some item",
+        "count": 1,
+    },
 }
 ```
 
-The `And` and `Or` rules have a slightly different format:
+For `And` and `Or` rules, instead of an `args` key, they have a `children` key containing a list of their child rules in the same serializable format:
 
-```json
+```python
 {
     "rule": "And",
-    "options": {...},
+    "options": [],
     "children": [
-        {<each serialized rule>}
+        ...,  # each serialized rule
     ]
 }
 ```
 
-To define a custom format, override the `to_json` function:
+A full example is as follows:
 
 ```python
-class MyRule(Rule, game="My Game"):
-    def to_json(self) -> Mapping[str, Any]:
+rule = And(
+    Has("a", options=[OptionFilter(ToggleOption, 0)]),
+    Or(Has("b", count=2), CanReachRegion("c"), options=[OptionFilter(ToggleOption, 1)]),
+)
+assert rule.to_dict() == {
+    "rule": "And",
+    "options": [],
+    "children": [
+        {
+            "rule": "Has",
+            "options": [
+                {
+                    "option": "worlds.my_world.options.ToggleOption",
+                    "value": 0,
+                    "operator": "eq",
+                },
+            ],
+            "args": {
+                "item_name": "a",
+                "count": 1,
+            },
+        },
+        {
+            "rule": "Or",
+            "options": [
+                {
+                    "option": "worlds.my_world.options.ToggleOption",
+                    "value": 1,
+                    "operator": "eq",
+                },
+            ],
+            "children": [
+                {
+                    "rule": "Has",
+                    "options": [],
+                    "args": {
+                        "item_name": "b",
+                        "count": 2,
+                    },
+                },
+                {
+                    "rule": "CanReachRegion",
+                    "options": [],
+                    "args": {
+                        "region_name": "c",
+                    },
+                },
+            ],
+        },
+    ],
+}
+```
+
+### Custom serialization
+
+To define a different format for your custom rules, override the `to_dict` function:
+
+```python
+class BasicLogicRule(Rule, game="My Game"):
+    items = ("one", "two")
+
+    def to_dict(self) -> dict[str, Any]:
+        # Return whatever format works best for you
         return {
-            "rule": "my_rule",
-            "custom_logic": [...]
+            "logic": "basic",
+            "items": self.items,
         }
 ```
 
-If your logic has been done in custom JSON first, you can define a `from_json` class method on your rules to parse it correctly:
+If your logic has been done in custom JSON first, you can define a `from_dict` class method on your rules to parse it correctly:
 
 ```python
-class MyRule(Rule, game="My Game"):
+class BasicLogicRule(Rule, game="My Game"):
     @classmethod
-    def from_json(cls, data: Mapping[str, Any]) -> Self:
-        return cls(data.get("custom_logic"))
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
+        items = data.get("items", ())
+        return cls(*items)
 ```
 
 ## Rule explanations
