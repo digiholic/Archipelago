@@ -8,9 +8,14 @@ class RegionRow(NamedTuple):
 class ResourceRow(NamedTuple):
     name: str
 
+class RuleElement(NamedTuple):
+    type: str
+    value: str
+
 class DropElement(NamedTuple):
     dest: str
-    chance: float
+    rate: int
+    rule: list[RuleElement]
 
 class MonsterRow(NamedTuple):
     name: str
@@ -20,10 +25,6 @@ class MonsterRow(NamedTuple):
 class RewardElement(NamedTuple):
     skill_name: str
     skill_level: int
-
-class RuleElement(NamedTuple):
-    type: str
-    value: str
 
 class LocationRow(NamedTuple):
     name: str

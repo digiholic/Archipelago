@@ -10,9 +10,14 @@ class RegionRow(NamedTuple):
 class ResourceRow(NamedTuple):
     name: str
 
+class RuleElement(NamedTuple):
+    type: str
+    value: str
+
 class DropElement(NamedTuple):
     dest: str
-    chance: float
+    rate: int
+    rule: list[RuleElement]
 
 class MonsterRow(NamedTuple):
     name: str
@@ -22,10 +27,6 @@ class MonsterRow(NamedTuple):
 class RewardElement(NamedTuple):
     skill_name: str
     skill_level: int
-
-class RuleElement(NamedTuple):
-    type: str
-    value: str
 
 class LocationRow(NamedTuple):
     name: str
@@ -213,6 +214,17 @@ mm_entrances: list[EntranceRow] = []
 
 task_macros: dict[str,list[str]] = {}
 
+task_unlock_item: dict[str,list[RuleElement]] = {}
+task_unlock_drops: dict[str,dict[str,list[RuleElement]]] = {}
+task_unlock_drops_generic: dict[str,list[RuleElement]] = {}
+
+task_unlock_monster: dict[str,dict[str,list[RuleElement]]] = {}
+task_unlock_npc: dict[str,dict[str,list[RuleElement]]] = {}
+task_unlock_object: dict[str,dict[str,list[RuleElement]]] = {}
+task_unlock_shop: dict[str,dict[str,list[RuleElement]]] = {}
+task_unlock_spawn: dict[str,dict[str,list[RuleElement]]] = {}
+
+
 slayer_level_req: dict[str,int] = {}
 
 monster_rows: list[MonsterRow] = []
@@ -248,7 +260,7 @@ def str_rules(ss:list[RuleElement]) -> str:
     return "["+(",".join([f"RuleElement({str_format(s.type)},{str_format(s.value)})" for s in ss])) +"]"
 
 def str_drops(ss:list[DropElement]) -> str:
-    return "["+(",".join([f"DropElement({str_format(s.dest)},{str(s.chance)})" for s in ss]))+"]"
+    return "["+(",".join([f"DropElement({str_format(s.dest)},{str(s.rate)},{str_rules(s.rule)})" for s in ss]))+"]"
 
 def convert_chunk_id(id:str)->str:
     return f"chunk_{id}"
@@ -268,7 +280,7 @@ def convert_drop_table(drop_table):
         return_table[key] = part_table
     return return_table
 
-def iterate_drop_table(drop_table):
+def iterate_drop_table(drop_table,drop_source):
     exception_list = ["always","varies","rare","unknown","uncommon","common","very rare","random"]
     drop_list = []
     if set(drop_table.keys()).intersection(banned_drop_items):
@@ -278,6 +290,11 @@ def iterate_drop_table(drop_table):
             drop_item = convert_loot_name(drop_item)
         noted_rate = 0
         raw_rate = 0
+        rule_list = []
+        if drop_item in task_unlock_drops_generic:
+            rule_list.extend(task_unlock_drops_generic[drop_item])
+        if drop_item in task_unlock_drops and drop_source in task_unlock_drops[drop_item]:
+            rule_list.extend(task_unlock_drops[drop_item][drop_source])
         for quant, rate in rates_table.items():
             if "~" in rate:
                 rate = rate[1:]
@@ -295,9 +312,9 @@ def iterate_drop_table(drop_table):
                 else:        #turns "4/128" -> 32.0
                     raw_rate += float.__truediv__(*([float(i) for i in rate.split("/")]))
         if noted_rate > 0:
-            drop_list.append(DropElement(drop_item+" (noted)",pow(min(noted_rate,1),-1)))
+            drop_list.append(DropElement(drop_item+" (noted)",int(pow(min(noted_rate,1),-1)),rule_list))
         if raw_rate > 0:
-            drop_list.append(DropElement(drop_item,pow(min(raw_rate,1),-1)))
+            drop_list.append(DropElement(drop_item,int(pow(min(raw_rate,1),-1)),rule_list))
         if drop_item not in resources:
             if drop_item in regions:
                 print(drop_item)
@@ -320,19 +337,25 @@ def chunk_init(chunk_name,chunk_id,chunk):
             connected_chunk = convert_chunk_id(connected_chunk)
             defered_region_connections.append((chunk_id,connected_chunk))
     if "Object" in chunk:
-        for object in chunk["Object"].keys():
-            if not object in resources:
-                resources.append(object)
-                resource_list.append(ResourceRow(object))
-            chunk["Contents"].append(object)
-            re_entrances.append(EntranceRow(chunk_id,object,[]))
+        for obj in chunk["Object"].keys():
+            if not obj in resources:
+                resources.append(obj)
+                resource_list.append(ResourceRow(obj))
+            chunk["Contents"].append(obj)
+            if obj in task_unlock_object and chunk_id in task_unlock_object[obj]:
+                re_entrances.append(EntranceRow(chunk_id,obj,task_unlock_object[obj][chunk_id]))
+            else:
+                re_entrances.append(EntranceRow(chunk_id,obj,[]))
     if "Spawn" in chunk:
-        for object in chunk["Spawn"].keys():
-            if object not in resources:
-                resources.append(object)
-                resource_list.append(ResourceRow(object))
-            chunk["Contents"].append(object)
-            re_entrances.append(EntranceRow(chunk_id,object,[]))
+        for spawn in chunk["Spawn"].keys():
+            if spawn not in resources:
+                resources.append(spawn)
+                resource_list.append(ResourceRow(spawn))
+            chunk["Contents"].append(spawn)
+            if spawn in task_unlock_spawn and chunk_id in task_unlock_spawn[spawn]:
+                re_entrances.append(EntranceRow(chunk_id,spawn,task_unlock_spawn[spawn][chunk_id]))
+            else:
+                re_entrances.append(EntranceRow(chunk_id,spawn,[]))
     if "Monster" in chunk:
         for monster in chunk["Monster"].keys():
             monster = convert_monster_name(monster)
@@ -341,7 +364,10 @@ def chunk_init(chunk_name,chunk_id,chunk):
                 monster_to_find.append(monster)
                 mm_entrances.append(EntranceRow(monster,"kill_Monster[+]",[]))
             chunk["Contents"].append(monster)
-            rm_entrances.append(EntranceRow(chunk_id,monster,[]))
+            if monster in task_unlock_monster and chunk_id in task_unlock_monster[monster]:
+                rm_entrances.append(EntranceRow(chunk_id,monster,task_unlock_monster[monster][chunk_id]))
+            else:
+                rm_entrances.append(EntranceRow(chunk_id,monster,[]))
     if "NPC" in chunk:
         for npc in chunk["NPC"].keys():
             if "Object" in chunk and npc in chunk["Object"]:
@@ -350,14 +376,20 @@ def chunk_init(chunk_name,chunk_id,chunk):
                 resources.append(npc)
                 resource_list.append(ResourceRow(npc))
             chunk["Contents"].append(npc)
-            re_entrances.append(EntranceRow(chunk_id,npc,[]))
+            if npc in task_unlock_npc and chunk_id in task_unlock_npc[npc]:
+                re_entrances.append(EntranceRow(chunk_id,npc,task_unlock_npc[npc][chunk_id]))
+            else:
+                re_entrances.append(EntranceRow(chunk_id,npc,[]))
     if "Shop" in chunk:
         for shop in chunk["Shop"].keys():
             if not shop in resources:
                 resources.append(shop)
                 resource_list.append(ResourceRow(shop))
             chunk["Contents"].append(shop)
-            re_entrances.append(EntranceRow(chunk_id,shop,[]))
+            if shop in task_unlock_shop and chunk_id in task_unlock_shop[shop]:
+                re_entrances.append(EntranceRow(chunk_id,shop,task_unlock_shop[shop][chunk_id]))
+            else:
+                re_entrances.append(EntranceRow(chunk_id,shop,[]))
     #if chunk_id == "chunk_12698":
     #    breakpoint()
     chunks[chunk_id]=chunk
@@ -368,6 +400,69 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
     for slayer_monster, slayer_level in exportedJSON["slayerMonsters"].items():
         if slayer_level>1:
             slayer_level_req[slayer_monster] = slayer_level
+    for category,lock_blob in exportedJSON["taskUnlocks"].items():
+        if category == "Items":
+            for item, rules in lock_blob.items():
+                rule_list = []
+                for rule in rules:
+                    for req,req_type in rule.items():
+                        if req in banned_tasks:
+                            continue
+                        if "[+]" in req:
+                            if req not in task_macros:
+                                print(req)
+                                breakpoint()
+                            rule_list.append(RuleElement("task_macro",req))
+                        else:
+                            rule_list.append(RuleElement("task",req))
+                if not rule_list:
+                    continue #The rule list is empty if it's only banned tasks
+                if "^" not in item:
+                    task_unlock_item[item] = rule_list
+                elif item.endswith("^"):
+                    item = item.rstrip("^")
+                    task_unlock_drops_generic[item] = rule_list
+                else:
+                    i,m = item.split("^",2)
+                    if i not in task_unlock_drops:
+                        task_unlock_drops[i] = {}
+                    task_unlock_drops[i][convert_monster_name(m)] = rule_list
+        else:
+            for value, value_blob in lock_blob.items():
+                for locked_chunk, rules in value_blob.items():
+                    locked_chunk = convert_chunk_id(locked_chunk)
+                    rule_list = []
+                    for rule in rules:
+                        for req,req_type in rule.items():
+                            if req in banned_tasks:
+                                continue
+                            if "[+]" in req:
+                                if req not in task_macros:
+                                    print(req)
+                                    breakpoint()
+                                rule_list.append(RuleElement("task_macro",req))
+                            else:
+                                rule_list.append(RuleElement("task",req))
+                    if not rule_list:
+                        continue
+                    relevent_dict = None
+                    if category == "Monsters":
+                        relevent_dict = task_unlock_monster
+                    elif category == "NPCs":
+                        relevent_dict = task_unlock_npc
+                    elif category == "Objects":
+                        relevent_dict = task_unlock_object
+                    elif category == "Shops":
+                        relevent_dict = task_unlock_shop
+                    elif category == "Spawns":
+                        relevent_dict = task_unlock_spawn
+                    if relevent_dict == None:
+                        print("PANIC! "+value)
+                        breakpoint()
+                        continue
+                    if value not in relevent_dict:
+                        relevent_dict[value] = {}
+                    relevent_dict[value][locked_chunk] = rule_list
     for chunk_id,chunk in exportedJSON["chunks"].items():
         chunk_name = ""
         if "Nickname" in chunk:
@@ -473,7 +568,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
         if macro_name not in resources:
             resources.append(macro_name)
             resource_list.append(ResourceRow(macro_name))
-        drop_list = iterate_drop_table(convert_drop_table(macro_list))
+        drop_list = iterate_drop_table(convert_drop_table(macro_list),macro_name)
         if drop_list:
             non_monster_rows.append(MonsterRow(macro_name,"Macro",drop_list))
     for macro_name, macro_list in exportedJSON["codeItems"]["monstersPlus"].items():
@@ -492,11 +587,11 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 continue
             if category == "Thieving" and drop_source in banned_thieving_objects:
                 continue
-            drop_list = iterate_drop_table(drop_table)
+            old_drop_source = drop_source
+            drop_source = convert_loot_name(drop_source)
+            drop_list = iterate_drop_table(drop_table,drop_source)
             if drop_list:
-                non_monster_names.append(drop_source)
-                old_drop_source = drop_source
-                drop_source = convert_loot_name(drop_source)
+                non_monster_names.append(old_drop_source)
                 if drop_source not in resources:
                     resources.append(drop_source)
                     resource_list.append(ResourceRow(drop_source))
@@ -517,9 +612,9 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
     for drop_source, drop_table in exportedJSON["drops"].items():
         if drop_source in banned_drop_items:
             continue
-        drop_list = iterate_drop_table(drop_table)
+        drop_source = convert_monster_name(drop_source)
+        drop_list = iterate_drop_table(drop_table,drop_source)
         if drop_list:
-            drop_source = convert_monster_name(drop_source)
             drop_source_category:str = drop_source
             if drop_source not in monsters:
                 continue
@@ -566,6 +661,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     category = "quest"
                 if "Tasks" in quest_data:
                     for req,req_type in quest_data["Tasks"].items():
+                        if req in banned_tasks:
+                            continue
                         if "[+]" in req:
                             if req not in task_macros:
                                 print(req)
@@ -707,6 +804,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
+                        if req in banned_tasks:
+                            continue
                         if "[+]" in req:
                             if req not in task_macros:
                                 print(req)
@@ -766,6 +865,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output))
                     if output in missing_resources:
                         missing_resources.remove(output)
+                    if output in task_unlock_item:
+                        rule_list = rule_list + task_unlock_item[output]
                     if parent_region_type == "r":
                         re_entrances.append(EntranceRow(parent_region,output,rule_list))
                     elif parent_region_type == "e":
@@ -866,6 +967,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         rule_list.append(RuleElement("can_reach",item))
                 if "Tasks" in task_data:
                     for req,req_type in task_data["Tasks"].items():
+                        if req in banned_tasks:
+                            continue
                         if "[+]" in req:
                             if not req.endswith("[+]"):
                                 req,count = req.rsplit("x",1)
@@ -915,6 +1018,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                         resource_list.append(ResourceRow(output))
                     if output in missing_resources:
                         missing_resources.remove(output)
+                    if output in task_unlock_item:
+                        rule_list = rule_list + task_unlock_item[output]
                     if parent_region_type == "r":
                         re_entrances.append(EntranceRow(parent_region,output,rule_list))
                     elif parent_region_type == "e":
