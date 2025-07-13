@@ -34,7 +34,36 @@ class GoalLocation(FreeText):
     display_name = "Goal Location"
     default = "~|Dragon Slayer I|~ Complete the quest"
 
+class DisableCulling(Toggle):
+    """
+    Disable the culling that reduces the size of the game
+    DO NOT DO THIS UNLESS YOU HATE YOURSELF MORE THEN A NORMAL OSRS PLAYER
+    """
+    display_name = "Disable Culling"
+    default = False
 
+class MaxDropRate(Range):
+    """
+    The Maximum drop rate that will be considered logical access
+    Be careful as to low a value might make your game unbeatable or at least VERY convoluted
+    """
+    display_name = "Maximum Drop Rate"
+    default = 1024
+    range_start = 1
+    range_end = 10_000 #uncut onyx from the elven crystal chest
+
+class FullMaxDropRate(Range):
+    """
+    Override for Maximum Drop Rate that allows for choosing values that are VERY ill advised
+    Leave at 0 if you don't know what you're doing
+    Use with extreme caution
+    """
+    dispaly_name = "Full Maximum Drop Rate"
+    default = 0
+    range_start = 0
+    range_end = 100_000_000 #uncut onyx from a gem back
+    visibility = Visibility(Visibility.all - Visibility.simple_ui)
+    
 class BrutalGrinds(Toggle):
     """
     Whether to allow skill tasks without having reasonable access to the usual skill training path.
@@ -532,6 +561,9 @@ class GeneralTaskWeight(Range):
 class OSRSOptions(PerGameCommonOptions):
     starting_area: StartingArea
     goal_location: GoalLocation
+    disable_culling: DisableCulling
+    max_drop_rate: MaxDropRate
+    full_drop_rate: FullMaxDropRate
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds

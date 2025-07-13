@@ -312,9 +312,11 @@ def iterate_drop_table(drop_table,drop_source):
                 else:        #turns "4/128" -> 32.0
                     raw_rate += float.__truediv__(*([float(i) for i in rate.split("/")]))
         if noted_rate > 0:
-            drop_list.append(DropElement(drop_item+" (noted)",int(pow(min(noted_rate,1),-1)),rule_list))
+            resolved_noted_rate = int(pow(min(noted_rate,1),-1))
+            drop_list.append(DropElement(drop_item+" (noted)",resolved_noted_rate,rule_list))
         if raw_rate > 0:
-            drop_list.append(DropElement(drop_item,int(pow(min(raw_rate,1),-1)),rule_list))
+            resolved_raw_rate = int(pow(min(raw_rate,1),-1))
+            drop_list.append(DropElement(drop_item,resolved_raw_rate,rule_list))
         if drop_item not in resources:
             if drop_item in regions:
                 print(drop_item)

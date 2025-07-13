@@ -21,7 +21,9 @@ from .LogicCSV.regions_generated2 import region_rows,item_rows,location_rows,res
 from .Regions import RegionRow, ResourceRow, DropElement, MonsterRow, RuleElement, RewardElement, LocationRow, EntranceRow, TrainingRow
 
 from typing import Callable, Counter
+import logging
 
+logger = logging.getLogger(__name__)
 class OSRSWeb(WebWorld):
     theme = "stone"
 
@@ -52,6 +54,7 @@ class OSRSWorld(RuleWorldMixin, World):
     web = OSRSWeb()
     base_id = base_id
     data_version = 1
+    rule_caching_enabled = False
 
     item_name_to_id = {item_rows[i].name: base_id + i for i in range(len(item_rows))}
     location_name_to_id = {location_rows[i].name: base_id + i for i in range(len(location_rows))}
@@ -60,6 +63,8 @@ class OSRSWorld(RuleWorldMixin, World):
     region_name_to_data: typing.Dict[str, Region]
     location_name_to_data: typing.Dict[str, OSRSLocation]
     item_rows_by_name: typing.ClassVar[dict[str, ItemRow]] = {it_row.name: it_row for it_row in item_rows}
+    location_name_to_row: ClassVar[dict[str,LocationRow]] = {loc_row.name:loc_row for loc_row in (location_rows+sub_quests)}
+    region_code_to_name: ClassVar[dict[str,str]] = {reg_row.id:reg_row.name for reg_row in region_rows}
 
     starting_area_item: str
 
@@ -73,6 +78,7 @@ class OSRSWorld(RuleWorldMixin, World):
         self.starting_area_item = ""
 
         self.available_QP_locations = []
+        self.items_already_created = 0
 
     def generate_early(self) -> None:
 
@@ -200,9 +206,7 @@ class OSRSWorld(RuleWorldMixin, World):
 
         self.multiworld.get_location(goal_location_name, self.player).place_locked_item(self.create_item("Area: Victory"))
 
-        #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
-    
-    def set_rules(self):
+        #set_rules
         rr_entrances_cache:dict[str,tuple[Entrance,list]] = {}
         rr_entrances_cache_miss: list[str] = []
 
@@ -317,29 +321,43 @@ class OSRSWorld(RuleWorldMixin, World):
             rule = self.generate_lambda(entrance.rule)
             if rule is not None: self.set_rule(entrance_obj,rule)
         
+        resolved_rate = self.options.max_drop_rate if self.options.full_drop_rate == 0 else self.options.full_drop_rate
+
         for monster in monster_drops:
             assert isinstance(monster, MonsterRow)
             for drop in monster.drops:
+                if drop.rate > resolved_rate:
+                    continue
                 sourceRegion = self.region_name_to_data[monster.name]
                 dest_name = drop.dest
+                rule_list = None
+                if drop.rule:
+                    rule_list = self.generate_lambda(drop.rule)
                 if "(noted)" in dest_name:
                     destRegion = self.region_name_to_data[drop.dest[:-8]]
                 else:
                     destRegion = self.region_name_to_data[drop.dest]
                 entrance_name = f"{sourceRegion.name} -> {dest_name}"
-                sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
+                entrance = sourceRegion.connect(destRegion,entrance_name,None)
+                if rule_list is not None: self.set_rule(entrance,rule_list)
 
         for non_monster in non_monster_drops:
             assert isinstance(non_monster, MonsterRow)
             for drop in non_monster.drops:
+                if drop.rate > resolved_rate:
+                    continue
                 sourceRegion = self.region_name_to_data[non_monster.name]
                 dest_name = drop.dest
+                rule_list = None
+                if drop.rule:
+                    rule_list = self.generate_lambda(drop.rule)
                 if "(noted)" in dest_name:
                     destRegion = self.region_name_to_data[drop.dest[:-8]]
                 else:
                     destRegion = self.region_name_to_data[drop.dest]
                 entrance_name = f"{sourceRegion.name} -> {dest_name}"
-                sourceRegion.connect(destRegion,entrance_name,None) #todo: make drop rates matter
+                entrance = sourceRegion.connect(destRegion,entrance_name,None)
+                if rule_list is not None: self.set_rule(entrance,rule_list)
 
         for location_row in location_rows:
             if location_row.rule:
@@ -383,16 +401,79 @@ class OSRSWorld(RuleWorldMixin, World):
                     self.set_rule(method,rule)
 
         self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
-
-    def create_items(self) -> None:
-        itempool = []
+        #create_items
+        itempool:list[Item]= []
         for item_row in item_rows:
             if item_row.name not in ["Area: Victory",self.starting_area_item]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
                     itempool.append(item)
 
-        un_filled_loc_size = len(self.multiworld.get_unfilled_locations(self.player))
+        
+        #culling time
+        base_state = CollectionState(self.multiworld)
+        if not self.options.disable_culling:
+            all_state = base_state.copy()
+            for item in itempool:
+                all_state.add_item(item.name,self.player)
+            all_state.sweep_for_advancements()
+            all_state.update_reachable_regions(self.player)
+            max_chance = len([loc for region in all_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
+            base_itempool = itempool.copy()
+            self.random.shuffle(base_itempool)
+            exit_counter = 0
+            for item in base_itempool:
+                temp_state = CollectionState(self.multiworld)
+                for i in itempool:
+                    if i.name != item.name:
+                        temp_state.add_item(i.name,self.player)
+                temp_state.sweep_for_advancements()
+                temp_state.update_reachable_regions(self.player)
+                if self.multiworld.completion_condition[self.player](temp_state):
+                    curr_chance = len([loc for region in temp_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
+                    rand_value = 0 if curr_chance < 0 else self.random.randint(0,max_chance)
+                    if rand_value<curr_chance:
+                        itempool.remove(item)
+                    if rand_value == 0:
+                        exit_counter += 1
+                        if exit_counter > 5:
+                            break
+
+        self.multiworld.itempool+=itempool
+        self.items_already_created = len(itempool)
+        all_state = base_state.copy()
+        for item in itempool:
+            all_state.add_item(item.name,self.player)
+        all_state.sweep_for_advancements()
+        all_state.update_reachable_regions(self.player)
+
+        
+        #now remove regions/locations that aren't reachable with the reduced itempool
+        regions = self.multiworld.regions.region_cache[self.player]
+        temp_regions = regions.copy()
+        for region_name, region in temp_regions.items():
+            if all_state.can_reach_region(region_name,self.player):
+                temp_locs = region.locations.copy()
+                for loc in temp_locs:
+                    if not all_state.can_reach_location(loc.name,self.player):
+                        region.locations.remove(loc)
+            else:
+                for entrance in region.entrances: #disconnect entrances
+                    if entrance.parent_region:
+                        entrance.parent_region.exits.remove(entrance)
+                for exit in region.exits: #disconnect exists
+                    if exit.connected_region:
+                        exit.connected_region.entrances.remove(exit)
+                for location in region.locations: #delete all the locations in that region
+                    del self.multiworld.regions.location_cache[self.player][location.name]
+                del regions[region_name] #delete the region
+
+        #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
+
+    def create_items(self) -> None:
+        itempool = []
+
+        un_filled_loc_size = len(self.multiworld.get_unfilled_locations(self.player)) - self.items_already_created
         while len(itempool) < un_filled_loc_size:
             itempool.append(self.create_filler())
         
@@ -481,6 +562,8 @@ class OSRSWorld(RuleWorldMixin, World):
         return OSRSItem(event, ItemClassification.progression, None, self.player)
     
     def collect(self, state: CollectionState, item: Item) -> bool:
+        if item.code:
+            return super().collect(state,item)
         if item.name.startswith("QP "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
@@ -499,6 +582,8 @@ class OSRSWorld(RuleWorldMixin, World):
         return super().collect(state, item)
     
     def remove(self, state: CollectionState, item: Item) -> bool:
+        if item.code:
+            return super().remove(state,item)
         if item.name.startswith("QP "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
