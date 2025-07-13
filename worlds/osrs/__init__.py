@@ -112,21 +112,21 @@ class OSRSWorld(RuleWorldMixin, World):
         elif rule_element.type == "task":
             return Has(rule_element.value)
         elif rule_element.type == "chunk":
-            return CanReachRegion(rule_element.value)
+            return SafeCanReachRegion(rule_element.value)
         elif rule_element.type == "can_reach":
-            return CanReachRegion(rule_element.value)
+            return SafeCanReachRegion(rule_element.value)
         elif rule_element.type == "kill":
-            return CanReachRegion(rule_element.value)
+            return SafeCanReachRegion(rule_element.value)
         elif rule_element.type == "skill":
             skill,level = rule_element.value.rsplit("_",2)
             assert level.isdigit()
             if int(level) <= 1: return None
             if skill in ("Attack","Strength","Defence","Prayer","Hitpoints","Combat"):
-                return And(CanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2))
+                return And(SafeCanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2))
             if skill == "Slayer":
-                return And(CanReachRegion("PointSlayerMasters[+]"),Has("Quest Point",(int(level)-1)*2))
+                return And(SafeCanReachRegion("PointSlayerMasters[+]"),Has("Quest Point",(int(level)-1)*2))
             if skill == "Ranged":
-                return And(CanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2),CanReachRegion("Iron arrow"))
+                return And(SafeCanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2),SafeCanReachRegion("Iron arrow"))
             return HasTraining(skill,int(level))
         elif rule_element.type == "questPoints":
             return Has("Quest Point",int(rule_element.value))
@@ -629,6 +629,15 @@ class HasCount(Rule[OSRSWorld],game="OSRSWorld"):
         
         def __str__(self) -> str:
             return f"Need at least {self.needed_count} from ({', '.join(self.task_list)})"
+
+@dataclasses.dataclass()
+class SafeCanReachRegion(CanReachRegion["OSRSWorld"],game="OSRSWorld"):
+
+    class Resolved(CanReachRegion.Resolved):
+        @override
+        def _evaluate(self, state: "CollectionState") -> bool:
+            return self.region_name in state.multiworld.regions.region_cache[self.player] and state.can_reach_region(self.region_name, self.player)
+
 
 @dataclasses.dataclass()
 class HasTraining(Rule["OSRSWorld"],game="OSRSWorld"):
