@@ -83,6 +83,7 @@ class RuleWorldMixin(World):
         return self.simplify_rule(resolved_rule)
 
     def get_cached_rule(self, resolved_rule: "Rule.Resolved") -> "Rule.Resolved":
+        """Returns a cached instance of a resolved rule based on the hash"""
         if not self.rule_caching_enabled:
             # skip the caching logic entirely
             object.__setattr__(resolved_rule, "cacheable", False)
@@ -94,6 +95,7 @@ class RuleWorldMixin(World):
         return resolved_rule
 
     def register_rule_dependencies(self, resolved_rule: "Rule.Resolved") -> None:
+        """Registers a rule's item, region, location, and entrance dependencies to this world instance"""
         if not self.rule_caching_enabled:
             return
         for item_name, rule_ids in resolved_rule.item_dependencies().items():
@@ -111,7 +113,7 @@ class RuleWorldMixin(World):
             self.multiworld.register_indirect_condition(self.get_region(indirect_region), entrance)
 
     def register_dependencies(self) -> None:
-        """Register all rules that depend on locations with that location's dependencies"""
+        """Register all rules that depend on locations or entrances with their dependencies"""
         if not self.rule_caching_enabled:
             return
 
@@ -151,7 +153,7 @@ class RuleWorldMixin(World):
         self,
         from_region: "Region",
         to_region: "Region",
-        rule: "Rule[Self] | None",
+        rule: "Rule[Self] | None" = None,
         name: str | None = None,
     ) -> "Entrance | None":
         """Try to create an entrance between regions with the given rule, skipping it if the rule resolves to False"""
@@ -343,9 +345,11 @@ class RuleWorldMixin(World):
                 player_results.pop(rule_id, None)
 
 
+TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True, default=RuleWorldMixin)  # noqa: PLC0105
+
 Operator = Literal["eq", "ne", "gt", "lt", "ge", "le", "contains"]
 
-OPERATORS = {
+OPERATORS: dict[Operator, Callable[..., bool]] = {
     "eq": operator.eq,
     "ne": operator.ne,
     "gt": operator.gt,
@@ -354,7 +358,7 @@ OPERATORS = {
     "le": operator.le,
     "contains": operator.contains,
 }
-operator_strings = {
+operator_strings: dict[Operator, str] = {
     "eq": "==",
     "ne": "!=",
     "gt": ">",
@@ -364,7 +368,6 @@ operator_strings = {
 }
 
 T = TypeVar("T")
-TWorld = TypeVar("TWorld", bound=RuleWorldMixin, contravariant=True, default=RuleWorldMixin)  # noqa: PLC0105
 
 
 @dataclasses.dataclass(frozen=True)
@@ -380,6 +383,20 @@ class OptionFilter(Generic[T]):
             "value": self.value,
             "operator": self.operator,
         }
+
+    def check(self, options: "CommonOptions") -> bool:
+        """Tests the given options dataclass to see if it passes this option filter"""
+        option_name = next(
+            (name for name, cls in options.__class__.type_hints.items() if cls is self.option),
+            None,
+        )
+        if option_name is None:
+            raise ValueError(f"Cannot find option {self.option.__name__} in options class {options.__class__.__name__}")
+        opt = cast("Option[Any] | None", getattr(options, option_name, None))
+        if opt is None:
+            raise ValueError(f"Invalid option: {option_name}")
+
+        return OPERATORS[self.operator](opt.value, self.value)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
@@ -475,32 +492,15 @@ class Rule(Generic[TWorld]):
         if not isinstance(self.options, tuple):
             self.options = tuple(self.options)
 
-    def _passes_options(self, options: "CommonOptions") -> bool:
-        """Tests if the given world options pass the requirements for this rule"""
-        for option_filter in self.options:
-            option_name = next(
-                (name for name, cls in options.__class__.type_hints.items() if cls is option_filter.option),
-                None,
-            )
-            if option_name is None:
-                raise ValueError(f"Cannot find option: {option_filter.option.__name__}")
-            opt = cast("Option[Any] | None", getattr(options, option_name, None))
-            if opt is None:
-                raise ValueError(f"Invalid option: {option_name}")
-
-            if not OPERATORS[option_filter.operator](opt.value, option_filter.value):
-                return False
-
-        return True
-
     def _instantiate(self, world: "TWorld") -> "Resolved":
         """Create a new resolved rule for this world"""
         return self.Resolved(player=world.player)
 
     def resolve(self, world: "TWorld") -> "Resolved":
         """Resolve a rule with the given world"""
-        if not self._passes_options(world.options):
-            return world.false_rule
+        for option_filter in self.options:
+            if not option_filter.check(world.options):
+                return world.false_rule
         return self._instantiate(world)
 
     def to_dict(self) -> dict[str, Any]:
@@ -670,7 +670,10 @@ class False_(Rule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass(init=False)
 class NestedRule(Rule[TWorld], game="Archipelago"):
+    """A rule that takes an iterable of other rules as an argument and does logic based on them"""
+
     children: "tuple[Rule[TWorld], ...]"
+    """The child rules this rule's logic is based on"""
 
     def __init__(self, *children: "Rule[TWorld]", options: "Iterable[OptionFilter[Any]]" = ()) -> None:
         super().__init__(options=options)
@@ -751,6 +754,8 @@ class NestedRule(Rule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass(init=False)
 class And(NestedRule[TWorld], game="Archipelago"):
+    """A rule that only returns true when all child rules evaluate as true"""
+
     class Resolved(NestedRule.Resolved):
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -782,6 +787,8 @@ class And(NestedRule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass(init=False)
 class Or(NestedRule[TWorld], game="Archipelago"):
+    """A rule that returns true when any child rule evaluates as true"""
+
     class Resolved(NestedRule.Resolved):
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
@@ -816,6 +823,7 @@ class Wrapper(Rule[TWorld], game="Archipelago"):
     """A rule that wraps another rule to provide extra logic or data"""
 
     child: "Rule[TWorld]"
+    """The child rule being wrapped"""
 
     @override
     def _instantiate(self, world: "TWorld") -> "Rule.Resolved":
@@ -894,8 +902,13 @@ class Wrapper(Rule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass()
 class Has(Rule[TWorld], game="Archipelago"):
+    """A rule that checks if the player has at least `count` of a given item"""
+
     item_name: str
+    """The item to check for"""
+
     count: int = 1
+    """The count the player is required to have"""
 
     @override
     def _instantiate(self, world: "TWorld") -> "Resolved":
@@ -926,7 +939,15 @@ class Has(Rule[TWorld], game="Archipelago"):
             if self.count > 1:
                 messages.append({"type": "color", "color": "cyan", "text": str(self.count)})
                 messages.append({"type": "text", "text": "x "})
-            messages.append({"type": "item_name", "flags": 0b001, "text": self.item_name, "player": self.player})
+            item_message: JSONMessagePart = {
+                "type": "item_name",
+                "flags": 0b001,
+                "text": self.item_name,
+                "player": self.player,
+            }
+            if state:
+                item_message["color"] = "green" if self(state) else "salmon"
+            messages.append(item_message)
             return messages
 
         @override
@@ -1405,7 +1426,7 @@ class HasFromList(Rule[TWorld], game="Archipelago"):
                 messages = [
                     {"type": "text", "text": "Has "},
                     {"type": "color", "color": "cyan", "text": str(self.count)},
-                    {"type": "text", "text": " items from ("},
+                    {"type": "text", "text": "x items from ("},
                 ]
                 for i, item in enumerate(self.item_names):
                     if i > 0:
@@ -1414,11 +1435,16 @@ class HasFromList(Rule[TWorld], game="Archipelago"):
                 messages.append({"type": "text", "text": ")"})
                 return messages
 
+            found_count = state.count_from_list(self.item_names, self.player)
             found = [item for item in self.item_names if state.has(item, self.player)]
             missing = [item for item in self.item_names if item not in found]
             messages = [
                 {"type": "text", "text": "Has "},
-                {"type": "color", "color": "cyan", "text": f"{len(found)}/{self.count}"},
+                {
+                    "type": "color",
+                    "color": "green" if found_count >= self.count else "salmon",
+                    "text": f"{found_count}/{self.count}",
+                },
                 {"type": "text", "text": " items from ("},
             ]
             if found:
@@ -1447,17 +1473,19 @@ class HasFromList(Rule[TWorld], game="Archipelago"):
         def explain_str(self, state: "CollectionState | None" = None) -> str:
             if state is None:
                 return str(self)
+            found_count = state.count_from_list(self.item_names, self.player)
             found = [item for item in self.item_names if state.has(item, self.player)]
             missing = [item for item in self.item_names if item not in found]
             found_str = f"Found: {', '.join(found)}" if found else ""
             missing_str = f"Missing: {', '.join(missing)}" if missing else ""
             infix = "; " if found and missing else ""
-            return f"Has {len(found)}/{self.count} items from ({found_str}{infix}{missing_str})"
+            return f"Has {found_count}/{self.count} items from ({found_str}{infix}{missing_str})"
 
         @override
         def __str__(self) -> str:
             items = ", ".join(self.item_names)
-            return f"Has {self.count} items from ({items})"
+            count = f"{self.count}x items" if self.count > 1 else "an item"
+            return f"Has {count} from ({items})"
 
 
 @dataclasses.dataclass(init=False)
@@ -1482,6 +1510,74 @@ class HasFromListUnique(HasFromList[TWorld], game="Archipelago"):
         @override
         def _evaluate(self, state: "CollectionState") -> bool:
             return state.has_from_list_unique(self.item_names, self.player, self.count)
+
+        @override
+        def explain_json(self, state: "CollectionState | None" = None) -> "list[JSONMessagePart]":
+            messages: list[JSONMessagePart] = []
+            if state is None:
+                messages = [
+                    {"type": "text", "text": "Has "},
+                    {"type": "color", "color": "cyan", "text": str(self.count)},
+                    {"type": "text", "text": "x unique items from ("},
+                ]
+                for i, item in enumerate(self.item_names):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "item_name", "flags": 0b001, "text": item, "player": self.player})
+                messages.append({"type": "text", "text": ")"})
+                return messages
+
+            found_count = state.count_from_list_unique(self.item_names, self.player)
+            found = [item for item in self.item_names if state.has(item, self.player)]
+            missing = [item for item in self.item_names if item not in found]
+            messages = [
+                {"type": "text", "text": "Has "},
+                {
+                    "type": "color",
+                    "color": "green" if found_count >= self.count else "salmon",
+                    "text": f"{found_count}/{self.count}",
+                },
+                {"type": "text", "text": " unique items from ("},
+            ]
+            if found:
+                messages.append({"type": "text", "text": "Found: "})
+                for i, item in enumerate(found):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append(
+                        {"type": "item_name", "flags": 0b001, "color": "green", "text": item, "player": self.player}
+                    )
+                if missing:
+                    messages.append({"type": "text", "text": "; "})
+
+            if missing:
+                messages.append({"type": "text", "text": "Missing: "})
+                for i, item in enumerate(missing):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append(
+                        {"type": "item_name", "flags": 0b001, "color": "salmon", "text": item, "player": self.player}
+                    )
+            messages.append({"type": "text", "text": ")"})
+            return messages
+
+        @override
+        def explain_str(self, state: "CollectionState | None" = None) -> str:
+            if state is None:
+                return str(self)
+            found_count = state.count_from_list_unique(self.item_names, self.player)
+            found = [item for item in self.item_names if state.has(item, self.player)]
+            missing = [item for item in self.item_names if item not in found]
+            found_str = f"Found: {', '.join(found)}" if found else ""
+            missing_str = f"Missing: {', '.join(missing)}" if missing else ""
+            infix = "; " if found and missing else ""
+            return f"Has {found_count}/{self.count} unique items from ({found_str}{infix}{missing_str})"
+
+        @override
+        def __str__(self) -> str:
+            items = ", ".join(self.item_names)
+            count = f"{self.count}x unique items" if self.count > 1 else "a unique item"
+            return f"Has {count} from ({items})"
 
 
 @dataclasses.dataclass()
@@ -1582,6 +1678,8 @@ class HasGroupUnique(HasGroup[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass()
 class CanReachLocation(Rule[TWorld], game="Archipelago"):
+    """A rule that checks if the given location is reachable by the current player"""
+
     location_name: str
     """The name of the location to test access to"""
 
@@ -1653,6 +1751,8 @@ class CanReachLocation(Rule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass()
 class CanReachRegion(Rule[TWorld], game="Archipelago"):
+    """A rule that checks if the given region is reachable by the current player"""
+
     region_name: str
     """The name of the region to test access to"""
 
@@ -1703,6 +1803,8 @@ class CanReachRegion(Rule[TWorld], game="Archipelago"):
 
 @dataclasses.dataclass()
 class CanReachEntrance(Rule[TWorld], game="Archipelago"):
+    """A rule that checks if the given entrance is reachable by the current player"""
+
     entrance_name: str
     """The name of the entrance to test access to"""
 
