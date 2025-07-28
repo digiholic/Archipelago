@@ -11,6 +11,7 @@ from .Rules import *
 from .Options import OSRSOptions, StartingArea
 from .Names import LocationNames, ItemNames, RegionNames
 from Utils import visualize_regions
+from Options import OptionError
 
 from .LogicCSV.LogicCSVToPython import data_csv_tag
 #from .LogicCSV.items_generated import item_rows
@@ -82,6 +83,9 @@ class OSRSWorld(RuleWorldMixin, World):
 
     def generate_early(self) -> None:
 
+        if getattr(self.multiworld,"generation_is_fake",False):
+            self.options.disable_culling.value = True #don't cull in UT, this is fine because UT doens't do fill
+
         if self.options.starting_area.value == "any_chunk":
             self.starting_area_item = "Area: Lumbridge Castle"
             #not currently supported (need to exclude quest/item locked chunks)
@@ -120,6 +124,8 @@ class OSRSWorld(RuleWorldMixin, World):
         elif rule_element.type == "skill":
             skill,level = rule_element.value.rsplit("_",2)
             assert level.isdigit()
+            if self.options.maximum_training_levels.get(skill,Options.MaxTrainingLevel.default) < int(level):
+                return False_() #skill is outside of the maximum level
             if int(level) <= 1: return None
             if skill in ("Attack","Strength","Defence","Prayer","Hitpoints","Combat"):
                 return And(SafeCanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2))
@@ -127,7 +133,7 @@ class OSRSWorld(RuleWorldMixin, World):
                 return And(SafeCanReachRegion("PointSlayerMasters[+]"),Has("Quest Point",(int(level)-1)*2))
             if skill == "Ranged":
                 return And(SafeCanReachRegion("kill_Monster[+]"),Has("Quest Point",(int(level)-1)*2),SafeCanReachRegion("Iron arrow"))
-            return HasTraining(skill,int(level))
+            return HasTraining(skill,int(level),self.options.qp_per_level.value,self.options.levels_per_qp.value)
         elif rule_element.type == "questPoints":
             return Has("Quest Point",int(rule_element.value))
         elif rule_element.type == "kudos":
@@ -412,6 +418,16 @@ class OSRSWorld(RuleWorldMixin, World):
         
         #culling time
         base_state = CollectionState(self.multiworld)
+
+        temp_state = base_state.copy()
+        for item in itempool:
+            temp_state.add_item(item.name,self.player)
+        temp_state.sweep_for_advancements()
+        temp_state.update_reachable_regions(self.player)
+
+        if not self.multiworld.completion_condition[self.player](temp_state):
+            raise OptionError("Game isn't beatable with current settings")
+
         if not self.options.disable_culling:
             all_state = base_state.copy()
             for item in itempool:
@@ -538,7 +554,7 @@ class OSRSWorld(RuleWorldMixin, World):
     def create_training(self, training_row:TrainingRow):
         parent_region = self.get_region(training_row.parent_region)
         method = OSRSLocation(self.player,f"Training {training_row.skill_name}: {training_row.task_name}",None,parent_region)
-        method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+10}"))
+        method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+self.options.base_training_levels.value}"))
         method.show_in_spoiler = False
         parent_region.locations.append(method)
 
@@ -643,18 +659,22 @@ class SafeCanReachRegion(CanReachRegion["OSRSWorld"],game="OSRSWorld"):
 class HasTraining(Rule["OSRSWorld"],game="OSRSWorld"):
     skill_name: str
     skill_level: int
+    qp_run: int
+    qp_rise: int
     def _instantiate(self, world: "OSRSWorld") -> Rule.Resolved:
-        return self.Resolved(self.skill_name,self.skill_level,tuple([f"Training_{self.skill_name}_{level}" for level in range(self.skill_level,100)]),player=world.player,cacheable=True)
+        return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,tuple([f"Training_{self.skill_name}_{level}" for level in range(self.skill_level,100)]),player=world.player,cacheable=True)
 
     class Resolved(Rule.Resolved):
         skill_name: str
         skill_level: int
+        qp_run: int
+        qp_rise: int
         _relevent_items: tuple[str,...]
 
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             return state.has_any(self._relevent_items,self.player) or \
-                state.has_any([f"Training_{self.skill_name}_{level}" for level in range(max(0,self.skill_level-(state.count("Quest Point",self.player)//10)),self.skill_level)],self.player)
+                state.has_any([f"Training_{self.skill_name}_{level}" for level in range(max(0,self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run)),self.skill_level)],self.player)
 
         @override
         def item_dependencies(self) -> dict[str, set[int]]:

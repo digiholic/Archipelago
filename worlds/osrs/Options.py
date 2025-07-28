@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+from typing import Any, Dict
 
-from Options import Choice, Toggle, Range, PerGameCommonOptions,FreeText,Visibility
+from Options import Choice, Toggle, Range, NamedRange, PerGameCommonOptions,FreeText,Visibility,OptionDict
+from .LogicCSV.regions_generated2 import skill_names
+from schema import Schema,Optional,And
 
 MAX_COMBAT_TASKS = 16
 
@@ -63,7 +66,67 @@ class FullMaxDropRate(Range):
     range_start = 0
     range_end = 100_000_000 #uncut onyx from a gem back
     visibility = Visibility(Visibility.all - Visibility.simple_ui)
-    
+
+
+class MaxTrainingLevels(OptionDict):
+    """
+    The maximum levels that you will be expected to train each skill
+    """
+    display_name = "Maximum Required Skill Levels"
+    valid_keys = frozenset(skill_names)
+    default = {skill_name:(99 if skill_name != "Combat" else 100) for skill_name in skill_names}
+    schema = Schema({
+        Optional(skill_name):And(int,lambda n: 100>= n >= 0,error="Skill Level must be integers in the range of 0-99.")
+        for skill_name in skill_names
+    })
+
+    def __init__(self, value: Dict[str, Any]):
+        self.value = {}
+        for key,data in value.items():
+            try:
+                self.value[key] = MaxTrainingLevel.from_any(data).value
+            except ValueError:
+                self.value[key] = data
+
+class MaxTrainingLevel(Range):
+    default = 99
+    range_start = 0
+    range_end = 100
+    visibility = Visibility.none
+
+class QuestPointsPerLevel(NamedRange):
+    """
+    The Number of quest points to increase the training range
+    """
+    display_name = "Quest Points per Training Level"
+    default = 10
+    range_start = 1
+    range_end = 327
+    special_range_names = {
+        "disable" :327
+    }
+
+class LevelsPerQuestPoint(Range):
+    """
+    The number of levels to be expected to be over trained for each set of quest points
+    """
+    display_name = "Levels per Training Set"
+    default = 1
+    range_start = 0
+    range_end = 10
+
+class BaseTrainingLevels(NamedRange):
+    """
+    The Number of levels over a given training method you would be expected to train over by default
+    """
+    display_name = "Base Training Levels"
+    default = 9
+    range_start = 0
+    range_end = 99
+    special_range_names = {
+        "disable":99
+    }
+
 class BrutalGrinds(Toggle):
     """
     Whether to allow skill tasks without having reasonable access to the usual skill training path.
@@ -151,18 +214,6 @@ class CombatTaskWeight(Range):
     default = 50
 
 
-class MaxPrayerLevel(Range):
-    """
-    The highest Prayer requirement of any task generated.
-    If set to 0, no Prayer tasks will be generated.
-    """
-    display_name = "Max Required Prayer Level"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
 class MaxPrayerTasks(Range):
     """
     The maximum number of Prayer Tasks to possibly be assigned.
@@ -183,18 +234,6 @@ class PrayerTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Prayer Task Weight"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
-class MaxMagicLevel(Range):
-    """
-    The highest Magic requirement of any task generated.
-    If set to 0, no Magic tasks will be generated.
-    """
-    display_name = "Max Required Magic Level"
     visibility = Visibility.none
     range_start = 0
     range_end = 99
@@ -227,18 +266,6 @@ class MagicTaskWeight(Range):
     default = 50
 
 
-class MaxRunecraftLevel(Range):
-    """
-    The highest Runecraft requirement of any task generated.
-    If set to 0, no Runecraft tasks will be generated.
-    """
-    display_name = "Max Required Runecraft Level"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
 class MaxRunecraftTasks(Range):
     """
     The maximum number of Runecraft Tasks to possibly be assigned.
@@ -259,18 +286,6 @@ class RunecraftTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Runecraft Task Weight"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
-class MaxCraftingLevel(Range):
-    """
-    The highest Crafting requirement of any task generated.
-    If set to 0, no Crafting tasks will be generated.
-    """
-    display_name = "Max Required Crafting Level"
     visibility = Visibility.none
     range_start = 0
     range_end = 99
@@ -303,18 +318,6 @@ class CraftingTaskWeight(Range):
     default = 50
 
 
-class MaxMiningLevel(Range):
-    """
-    The highest Mining requirement of any task generated.
-    If set to 0, no Mining tasks will be generated.
-    """
-    display_name = "Max Required Mining Level"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
 class MaxMiningTasks(Range):
     """
     The maximum number of Mining Tasks to possibly be assigned.
@@ -335,18 +338,6 @@ class MiningTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Mining Task Weight"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
-class MaxSmithingLevel(Range):
-    """
-    The highest Smithing requirement of any task generated.
-    If set to 0, no Smithing tasks will be generated.
-    """
-    display_name = "Max Required Smithing Level"
     visibility = Visibility.none
     range_start = 0
     range_end = 99
@@ -379,18 +370,6 @@ class SmithingTaskWeight(Range):
     default = 50
 
 
-class MaxFishingLevel(Range):
-    """
-    The highest Fishing requirement of any task generated.
-    If set to 0, no Fishing tasks will be generated.
-    """
-    display_name = "Max Required Fishing Level"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
 class MaxFishingTasks(Range):
     """
     The maximum number of Fishing Tasks to possibly be assigned.
@@ -411,18 +390,6 @@ class FishingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Fishing Task Weight"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
-class MaxCookingLevel(Range):
-    """
-    The highest Cooking requirement of any task generated.
-    If set to 0, no Cooking tasks will be generated.
-    """
-    display_name = "Max Required Cooking Level"
     visibility = Visibility.none
     range_start = 0
     range_end = 99
@@ -455,18 +422,6 @@ class CookingTaskWeight(Range):
     default = 50
 
 
-class MaxFiremakingLevel(Range):
-    """
-    The highest Firemaking requirement of any task generated.
-    If set to 0, no Firemaking tasks will be generated.
-    """
-    display_name = "Max Required Firemaking Level"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
 class MaxFiremakingTasks(Range):
     """
     The maximum number of Firemaking Tasks to possibly be assigned.
@@ -487,18 +442,6 @@ class FiremakingTaskWeight(Range):
     is twice as likely to appear as one with 25.
     """
     display_name = "Firemaking Task Weight"
-    visibility = Visibility.none
-    range_start = 0
-    range_end = 99
-    default = 50
-
-
-class MaxWoodcuttingLevel(Range):
-    """
-    The highest Woodcutting requirement of any task generated.
-    If set to 0, no Woodcutting tasks will be generated.
-    """
-    display_name = "Max Required Woodcutting Level"
     visibility = Visibility.none
     range_start = 0
     range_end = 99
@@ -564,6 +507,10 @@ class OSRSOptions(PerGameCommonOptions):
     disable_culling: DisableCulling
     max_drop_rate: MaxDropRate
     full_drop_rate: FullMaxDropRate
+    maximum_training_levels: MaxTrainingLevels
+    qp_per_level: QuestPointsPerLevel
+    levels_per_qp: LevelsPerQuestPoint
+    base_training_levels: BaseTrainingLevels
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds
@@ -572,34 +519,24 @@ class OSRSOptions(PerGameCommonOptions):
     max_combat_level: MaxCombatLevel
     max_combat_tasks: MaxCombatTasks
     combat_task_weight: CombatTaskWeight
-    max_prayer_level: MaxPrayerLevel
     max_prayer_tasks: MaxPrayerTasks
     prayer_task_weight: PrayerTaskWeight
-    max_magic_level: MaxMagicLevel
     max_magic_tasks: MaxMagicTasks
     magic_task_weight: MagicTaskWeight
-    max_runecraft_level: MaxRunecraftLevel
     max_runecraft_tasks: MaxRunecraftTasks
     runecraft_task_weight: RunecraftTaskWeight
-    max_crafting_level: MaxCraftingLevel
     max_crafting_tasks: MaxCraftingTasks
     crafting_task_weight: CraftingTaskWeight
-    max_mining_level: MaxMiningLevel
     max_mining_tasks: MaxMiningTasks
     mining_task_weight: MiningTaskWeight
-    max_smithing_level: MaxSmithingLevel
     max_smithing_tasks: MaxSmithingTasks
     smithing_task_weight: SmithingTaskWeight
-    max_fishing_level: MaxFishingLevel
     max_fishing_tasks: MaxFishingTasks
     fishing_task_weight: FishingTaskWeight
-    max_cooking_level: MaxCookingLevel
     max_cooking_tasks: MaxCookingTasks
     cooking_task_weight: CookingTaskWeight
-    max_firemaking_level: MaxFiremakingLevel
     max_firemaking_tasks: MaxFiremakingTasks
     firemaking_task_weight: FiremakingTaskWeight
-    max_woodcutting_level: MaxWoodcuttingLevel
     max_woodcutting_tasks: MaxWoodcuttingTasks
     woodcutting_task_weight: WoodcuttingTaskWeight
     minimum_general_tasks: MinimumGeneralTasks

@@ -50,11 +50,6 @@ class FullTests(OSRSTestBase):
                 self.assertIn(location_row.name,location_cache,f"Location {location_row.name} was not created")
                 self.assertTrue(all_state.can_reach_location(location_row.name,1),f"Location {location_row.name} is not reachable")
 
-
-                
-
-
-class BasicTests(OSRSTestBase):
     def test_camdozaal_not_sphere_one(self) -> None:
         self.assertFalse( self.can_reach_location("(Camdozaal) Obtain a ~|barronite handle|~"))
         self.assertTrue(self.multiworld.get_all_state(False).can_reach_location("(Camdozaal) Obtain a ~|barronite handle|~",self.player))
