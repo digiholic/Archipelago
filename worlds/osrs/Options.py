@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from Options import Choice, Toggle, Range, NamedRange, PerGameCommonOptions,FreeText,Visibility,OptionDict
+from Options import Choice, Toggle, DefaultOnToggle, Range, NamedRange, PerGameCommonOptions,FreeText,Visibility,OptionDict
 from .LogicCSV.regions_generated2 import skill_names
 from schema import Schema,Optional,And
 
@@ -126,6 +126,12 @@ class BaseTrainingLevels(NamedRange):
     special_range_names = {
         "disable":99
     }
+
+class StartWithTutorialIsland(DefaultOnToggle):
+    """
+    Whether to keep or discard the starting inventory from tutorial island
+    """
+    display_name = "Start with Tutorial Island Items"
 
 class BrutalGrinds(Toggle):
     """
@@ -511,6 +517,7 @@ class OSRSOptions(PerGameCommonOptions):
     qp_per_level: QuestPointsPerLevel
     levels_per_qp: LevelsPerQuestPoint
     base_training_levels: BaseTrainingLevels
+    tutorial_island_items: StartWithTutorialIsland
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds

@@ -242,7 +242,13 @@ class OSRSWorld(RuleWorldMixin, World):
         re_entrances_cache_miss: list[str] = []
 
         for entrance in re_entrances: #Region to rEsource connections
-            sourceRegion = self.region_name_to_data[entrance.source]
+            if entrance.source == "Starting Items":
+                if self.options.tutorial_island_items.value:
+                    sourceRegion = self.region_name_to_data["Menu"]
+                else:
+                    continue
+            else:
+                sourceRegion = self.region_name_to_data[entrance.source]
             destRegion = self.region_name_to_data[entrance.dest]
             entrance_name = f"{sourceRegion.name} -> {destRegion.name}"
             if entrance_name in re_entrances_cache:

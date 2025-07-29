@@ -125,7 +125,11 @@ banned_tasks:list[str]=[
     "Magic Wardrobe: ~|Mystic robe top (or)|~","Magic Wardrobe: ~|Mystic robe bottom (or)|~","Magic Wardrobe: ~|Mystic gloves (or)|~","Magic Wardrobe: ~|Mystic boots (or)|~",
     "F2P Only","Obtain a ~|Golden Gnome|~","Buy the 1st upgrade to ~|bank space|~ for 1m","Buy the 2nd upgrade to ~|bank space|~ for 2m","Buy the 3rd upgrade to ~|bank space|~ for 5m",
     "Buy the 4th upgrade to ~|bank space|~ for 10m","Buy the 5th upgrade to ~|bank space|~ for 20m","Buy the 6th upgrade to ~|bank space|~ for 50m","Buy the 7th upgrade to ~|bank space|~ for 100m",
-    "Buy the 8th upgrade to ~|bank space|~ for 200m","Buy the 9th upgrade to ~|bank space|~ for 500m","Trade-in for platinum token*","Build a ~|tip jar|~"
+    "Buy the 8th upgrade to ~|bank space|~ for 200m","Buy the 9th upgrade to ~|bank space|~ for 500m","Trade-in for platinum token*","Build a ~|tip jar|~",
+    "Create ~|avernic treads (pe)|~","Create ~|avernic treads (pe)(et)|~","Create ~|avernic treads (pr)(pe)|~","Create ~|avernic treads (max)|~",
+    "Unlock the oak variant of the ~|greenman mask|~","Unlock the willow variant of the ~|greenman mask|~","Unlock the maple variant of the ~|greenman mask|~",
+    "Unlock the yew variant of the ~|greenman mask|~","Unlock the magic variant of the ~|greenman mask|~","(Doom of Mokhaiotl) Obtain ~|dom|~","(All Pets) Obtain ~|dom|~"
+
 
 
 ]
@@ -178,7 +182,7 @@ banned_chunks: list[str] = [
     "chunk_13914","chunk_13915","chunk_14154","chunk_14393","chunk_13977","chunk_13978","chunk_14232","chunk_14233","chunk_14487","chunk_14488",
     "chunk_13721","chunk_14653","chunk_14654","chunk_14909","chunk_14910","chunk_14999","chunk_15000","chunk_15001","chunk_15255","chunk_15256",
     "chunk_15257","chunk_15511","chunk_15512","chunk_15513","chunk_15262","chunk_15263","chunk_15515","chunk_11605","chunk_13197","chunk_11595",
-    "chunk_7257"
+    "chunk_7257","chunk_4759","chunk_5022","chunk_5023","chunk_5278","chunk_5535","chunk_5536"
 ]
 
 banned_drop_items:list[str]=[
@@ -593,6 +597,8 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
             drop_source = convert_loot_name(drop_source)
             drop_list = iterate_drop_table(drop_table,drop_source)
             if drop_list:
+                if old_drop_source in non_monster_names:
+                    continue
                 non_monster_names.append(old_drop_source)
                 if drop_source not in resources:
                     resources.append(drop_source)
@@ -921,7 +927,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "Category" in task_data and "Collection Log Clues" in task_data["Category"]:
                     continue
                 if "Category" in task_data and "Starting Items" in task_data["Category"] and "Output" in task_data:
-                    re_entrances.append(EntranceRow("Menu",task_data["Output"],[]))
+                    re_entrances.append(EntranceRow("Starting Items",task_data["Output"],[]))
                     continue
                 parent_region = None
                 parent_region_type = None
