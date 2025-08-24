@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from Options import Choice, Toggle, DefaultOnToggle, Range, NamedRange, PerGameCommonOptions,FreeText,Visibility,OptionDict
+from Options import Choice, Toggle, DefaultOnToggle, Range, NamedRange, PerGameCommonOptions,FreeText,Visibility,OptionDict,LocationSet
 from .LogicCSV.regions_generated2 import skill_names
 from schema import Schema,Optional,And
 
@@ -37,12 +37,19 @@ class GoalLocation(FreeText):
     display_name = "Goal Location"
     default = "~|Dragon Slayer I|~ Complete the quest"
 
-class DisableCulling(Toggle):
+class DisableChunkCulling(Toggle):
     """
-    Disable the culling that reduces the size of the game
+    Disable the culling that reduces the number of chunks that are in the "playable" space
     DO NOT DO THIS UNLESS YOU HATE YOURSELF MORE THEN A NORMAL OSRS PLAYER
     """
-    display_name = "Disable Culling"
+    display_name = "Disable Chunk Culling"
+    default = False
+class DisableLocationCulling(Toggle):
+    """
+    Disable the culling that reduces the number of Tasks that get created
+    This might create much smaller spheres, if this becomes a problem I will have to find a way to tone it down more
+    """
+    display_name = "Disable Task Culling"
     default = False
 
 class MaxDropRate(Range):
@@ -132,6 +139,13 @@ class StartWithTutorialIsland(DefaultOnToggle):
     Whether to keep or discard the starting inventory from tutorial island
     """
     display_name = "Start with Tutorial Island Items"
+
+class PreCompletedTasks(LocationSet):
+    """
+    A list of location names that are completed before the game starts.
+    Useful for cases where you need a quest to get to your starting area
+    """
+    display_name = "Pre-Completed Tasks"
 
 class BrutalGrinds(Toggle):
     """
@@ -510,7 +524,8 @@ class GeneralTaskWeight(Range):
 class OSRSOptions(PerGameCommonOptions):
     starting_area: StartingArea
     goal_location: GoalLocation
-    disable_culling: DisableCulling
+    disable_chunk_culling: DisableChunkCulling
+    disable_task_culling: DisableLocationCulling
     max_drop_rate: MaxDropRate
     full_drop_rate: FullMaxDropRate
     maximum_training_levels: MaxTrainingLevels
@@ -518,6 +533,7 @@ class OSRSOptions(PerGameCommonOptions):
     levels_per_qp: LevelsPerQuestPoint
     base_training_levels: BaseTrainingLevels
     tutorial_island_items: StartWithTutorialIsland
+    pre_completed_tasks: PreCompletedTasks
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds

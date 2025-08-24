@@ -32,6 +32,7 @@ class LocationRow(NamedTuple):
     name: str
     category: str
     parent_region:str
+    description:str
     rule: list[RuleElement]
     kudos_reward: int
     quest_point_reward: int
@@ -182,7 +183,7 @@ banned_chunks: list[str] = [
     "chunk_13914","chunk_13915","chunk_14154","chunk_14393","chunk_13977","chunk_13978","chunk_14232","chunk_14233","chunk_14487","chunk_14488",
     "chunk_13721","chunk_14653","chunk_14654","chunk_14909","chunk_14910","chunk_14999","chunk_15000","chunk_15001","chunk_15255","chunk_15256",
     "chunk_15257","chunk_15511","chunk_15512","chunk_15513","chunk_15262","chunk_15263","chunk_15515","chunk_11605","chunk_13197","chunk_11595",
-    "chunk_7257","chunk_4759","chunk_5022","chunk_5023","chunk_5278","chunk_5535","chunk_5536"
+    "chunk_7257","chunk_4759","chunk_5022","chunk_5023","chunk_5278","chunk_5535","chunk_5536","chunk_12633"
 ]
 
 banned_drop_items:list[str]=[
@@ -197,6 +198,10 @@ banned_thieving_objects:list[str]=[
     "Anja","Agnar","Berry","Borrokar","Cuffs","Curator Haig Halen","Dr Fenkenstrain","Drunken man","Fairy Godfather","Freidir","Gnome child",
     "Gnome woman","Guard (Shayzien)","Head Guard","Hengel","Inga","Jeff","Jennella","Lanzig","Lensa","Narf","Pontak","Sandy","Sassilik",
     "Sigmund","Student","Guard (Hosidius)","Twig","Woman","Zealot","Rusty"
+]
+
+reverse_connect_chunks:list[str]=[
+    "chunk_Death's Office"
 ]
 
 quest_list:list[LocationRow] = []
@@ -290,8 +295,10 @@ def iterate_drop_table(drop_table,drop_source):
     if set(drop_table.keys()).intersection(banned_drop_items):
         return [] #if there is any key that's on the banned list, quit out early
     for drop_item, rates_table in drop_table.items():
+        normal_item = True
         if drop_item in non_monster_names:
             drop_item = convert_loot_name(drop_item)
+            normal_item = False
         noted_rate = 0
         raw_rate = 0
         rule_list = []
@@ -316,9 +323,13 @@ def iterate_drop_table(drop_table,drop_source):
                 else:        #turns "4/128" -> 32.0
                     raw_rate += float.__truediv__(*([float(i) for i in rate.split("/")]))
         if noted_rate > 0:
+            if not normal_item:
+                noted_rate = pow(noted_rate,2) #if it's a macro, assume it's going to be at least as bad
             resolved_noted_rate = int(pow(min(noted_rate,1),-1))
             drop_list.append(DropElement(drop_item+" (noted)",resolved_noted_rate,rule_list))
         if raw_rate > 0:
+            if not normal_item:
+                raw_rate = pow(raw_rate,2)
             resolved_raw_rate = int(pow(min(raw_rate,1),-1))
             drop_list.append(DropElement(drop_item,resolved_raw_rate,rule_list))
         if drop_item not in resources:
@@ -483,7 +494,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
         else:
             chunk_init(chunk_name,convert_chunk_id(chunk_id),chunk)
     for source_chunk, dest_chunk in defered_region_connections:
-        if source_chunk in banned_chunks or dest_chunk in banned_chunks:
+        if source_chunk in banned_chunks or dest_chunk in banned_chunks or source_chunk in reverse_connect_chunks:
             continue
         if dest_chunk not in chunks:
             if f"{dest_chunk}-1" not in chunks:
@@ -662,6 +673,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
             for quest_name, quest_data in task_list.items():
                 target_list = sub_quest_list
                 category = "subquest"
+                description = ""
                 parent_region = None
                 rule_list = []
                 if "Complete" in quest_name:
@@ -752,7 +764,9 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     kudos_reward = int(quest_data["Kudos"])
                 if "CombatPoints" in quest_data:
                     combat_point_reward = int(quest_data["CombatPoints"])
-                target_list.append(LocationRow(quest_name,category,parent_region,rule_list,kudos_reward,quest_point_reward,combat_point_reward))
+                if "Description" in quest_data:
+                    description = quest_data["Description"]
+                target_list.append(LocationRow(quest_name,category,parent_region,description,rule_list,kudos_reward,quest_point_reward,combat_point_reward))
                 for field in quest_data.keys():
                     if field not in [
                         "BaseQuest","Description","NPCs","Tasks","Items","Not F2P",
@@ -770,6 +784,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 if "Category" in task_data and "Quest Skill Reqs" in task_data["Category"]:
                     continue #these aren't real, and aren't needed
                 parent_region = None
+                description = ""
                 parent_region_type = None
                 rule_list = []
                 if "Chunks" in task_data:
@@ -903,7 +918,9 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     else:
                         print(task_name)
                         breakpoint()
-                non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,0,0,0))
+                if "Description" in task_data:
+                    description = task_data["Description"]
+                non_quest_list.append(LocationRow(task_name,task_type,parent_region,description,rule_list,0,0,0))
                 non_quest_names.append(task_name)
                 for field in task_data.keys():
                     if field not in [
@@ -931,6 +948,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                     continue
                 parent_region = None
                 parent_region_type = None
+                description = ""
                 rule_list = []
                 if "ForcedSecondary" in task_data and task_data["ForcedSecondary"]:
                     continue #Used in sources that aren't real but technically exist... just ignore them
@@ -1118,8 +1136,10 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
                 kudos_reward = 0
                 if "Kudos" in task_data:
                     kudos_reward = int(task_data["Kudos"])
+                if "Description" in task_data:
+                    description = task_data["Description"]
                 if "ConnectsSections" not in task_data and "UnlocksArea" not in task_data: #don't make these as locations
-                    non_quest_list.append(LocationRow(task_name,task_type,parent_region,rule_list,kudos_reward,0,0))
+                    non_quest_list.append(LocationRow(task_name,task_type,parent_region,"",rule_list,kudos_reward,0,0))
                     non_quest_names.append(task_name)
                 for field in task_data.keys():
                     if field not in [
@@ -1287,6 +1307,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += ","
                 row_line += str_format(quest_row.parent_region)
                 row_line += ","
+                row_line += str_format(quest_row.description)
+                row_line += ","
                 row_line += str_rules(quest_row.rule)
                 row_line += ","
                 row_line += str(quest_row.kudos_reward)
@@ -1309,6 +1331,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += ","
                 row_line += str_format(quest_row.parent_region)
                 row_line += ","
+                row_line += str_format(quest_row.description)
+                row_line += ","
                 row_line += str_rules(quest_row.rule)
                 row_line += ","
                 row_line += str(quest_row.kudos_reward)
@@ -1330,6 +1354,8 @@ with open(os.path.join(this_dir, "regions_generated2.py"), "w+") as regPyFile:
                 row_line += str_format(location_row.category)
                 row_line += ","
                 row_line += str_format(location_row.parent_region)
+                row_line += ","
+                row_line += str_format(quest_row.description)
                 row_line += ","
                 row_line += str_rules(location_row.rule)
                 row_line += ","
