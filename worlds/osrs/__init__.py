@@ -223,8 +223,10 @@ class OSRSWorld(RuleWorldMixin, World):
 
         goal_location_name = self.options.goal_location.value if self.options.goal_location.value in self.location_name_to_id else "~|Dragon Slayer I|~ Complete the quest"
         self.options.goal_location.value = goal_location_name
-
-        self.multiworld.get_location(goal_location_name, self.player).place_locked_item(self.create_item("Area: Victory"))
+        real_goal_location = self.multiworld.get_location(goal_location_name, self.player)
+        goal_location = OSRSLocation(self.player,f"Victory {goal_location_name}",None,real_goal_location.parent_region)
+        goal_location.place_locked_item(self.create_event("Victory"))
+        real_goal_location.parent_region.locations.append(goal_location)
 
         #set_rules
         rr_entrances_cache:dict[str,tuple[Entrance,list]] = {}
@@ -386,14 +388,15 @@ class OSRSWorld(RuleWorldMixin, World):
                 if rule_list is not None: self.set_rule(entrance,rule_list)
 
         for location_row in location_rows:
-            if location_row.name in self.pre_completed_locations:
-                continue #Doesn't exist
             if location_row.rule:
                 location = self.multiworld.get_location(location_row.name,self.player)
                 fake_location = self.multiworld.get_location(location_row.name+" event",self.player)
                 rule = self.generate_lambda(location_row.rule)
                 if rule is not None:
-                    self.set_rule(location,rule)
+                    if not (location_row.name in self.pre_completed_locations or location_row.name in self.options.exclude_locations):
+                        self.set_rule(location,rule)
+                    if location_row.name == goal_location_name:
+                        self.set_rule(goal_location,rule)
                     self.set_rule(fake_location,rule)
                 if location_row.quest_point_reward > 0:
                     qp_loc = self.multiworld.get_location("Points: " + location_row.name,self.player)
@@ -408,12 +411,10 @@ class OSRSWorld(RuleWorldMixin, World):
                     if rule is not None:
                         self.set_rule(qp_loc,rule)
         for location_row in sub_quests:
-            if location_row.name in self.pre_completed_locations:
-                continue #Doesn't exist
             if location_row.rule:
                 location = self.multiworld.get_location(location_row.name,self.player)
                 rule = self.generate_lambda(location_row.rule)
-                if rule is not None:
+                if rule is not None: #subquests can't be excluded or precompleted as they aren't real
                     self.set_rule(location,rule)
                 if location_row.quest_point_reward > 0:
                     raise Exception("This shouldn't happen but i want to know if it does "+location_row.name)
@@ -430,11 +431,11 @@ class OSRSWorld(RuleWorldMixin, World):
                 if rule is not None:
                     self.set_rule(method,rule)
 
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Area: Victory", self.player))
+        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
         #create_items
         itempool:list[Item]= []
         for item_row in item_rows:
-            if item_row.name not in ["Area: Victory",self.starting_area_item]:
+            if item_row.name not in [self.starting_area_item]:
                 for c in range(item_row.amount):
                     item = self.create_item(item_row.name)
                     itempool.append(item)
@@ -488,6 +489,7 @@ class OSRSWorld(RuleWorldMixin, World):
         all_state.update_reachable_regions(self.player)
 
         reachable_loc_map:dict[Location,int] = {}
+        region_depth_cache:dict[str,int]= {}
         max_depth = 0
 
         #now remove regions/locations that aren't reachable with the reduced itempool
@@ -497,10 +499,14 @@ class OSRSWorld(RuleWorldMixin, World):
             if all_state.can_reach_region(region_name,self.player):
                 depth = 0
                 if region.name != self.origin_region_name:
-                    temp_path = all_state.path[region]
-                    while temp_path[1] is not None:
-                        temp_path = temp_path[1]
-                        depth += 1
+                    if region.name in region_depth_cache:
+                        depth = region_depth_cache[region.name]
+                    else:
+                        temp_path = all_state.path[region]
+                        while temp_path[1] is not None:
+                            temp_path = temp_path[1]
+                            depth += 1
+                        region_depth_cache[region.name] = depth
                 max_depth = max(max_depth,depth)
                 temp_locs = region.locations.copy()
                 for loc in temp_locs:
@@ -521,10 +527,8 @@ class OSRSWorld(RuleWorldMixin, World):
 
         if not self.options.disable_task_culling.value:
             location_list = list(reachable_loc_map.keys())
-            location_list.remove(self.get_location(self.options.goal_location.value))
             #get my fraction parts
             maximum_locations = len(location_list)
-            max_depth = min(max_depth,maximum_locations) #We need to cap this or we won't ever remove anything
             items_created = self.items_already_created
             locations_created = len(location_list)
             #start to cull
@@ -532,18 +536,25 @@ class OSRSWorld(RuleWorldMixin, World):
             for loc in location_list:
                 depth = min(reachable_loc_map[loc],max_depth)
                 goal_number = (locations_created - items_created)  #(current locs - locs needed) ~= locs needed to be removed * current depth
-                rolled_value = self.random.randint(0,maximum_locations)
-                if rolled_value < goal_number:
+                if depth == 0:
+                    continue #goal number check covered by breaking early
+                if (
+                        (self.random.randint(0,maximum_locations) < goal_number)+
+                        (self.random.randint(0,maximum_locations) < goal_number)+
+                        (self.random.randint(0,max_depth) < depth)+
+                        (self.random.randint(0,max_depth) < depth)
+                    ) >= 1:
                     assert loc.parent_region
                     loc.parent_region.locations.remove(loc)
                     locations_created -= 1
-                    logger.info(f"Location {loc.name} deleted, {rolled_value}/{goal_number}/{maximum_locations}, {locations_created - items_created} left")
+                    #logger.info(f"Location {loc.name} deleted, {rolled_value}/{goal_number}/{maximum_locations}, {locations_created - items_created} left")
                     if not self.multiworld.completion_condition[self.player](all_state):
                         logger.error("HOW DID YOU BREAK THIS???")
                         break
                     if locations_created <= items_created:
                         break #Exit early if we've already removed enough
             logger.error(f"{maximum_locations-locations_created} deleted")
+            logger.error(f"{locations_created - items_created} left")
 
         #visualize_regions(self.region_name_to_data["chunk_11937"],"osrs_regions.puml",show_locations=False,show_entrance_names=False,show_other_regions=False)
 
@@ -569,7 +580,7 @@ class OSRSWorld(RuleWorldMixin, World):
             exit()
         else:
             location_id = self.location_name_to_id[location_row.name]
-        if location_row.name in self.pre_completed_locations:
+        if location_row.name in self.pre_completed_locations or location_row.name in self.options.exclude_locations:
             #Don't do most of this, just add the events to precollected :)
             self.push_precollected(self.create_event(location_row.name))
             if location_row.quest_point_reward>0:
@@ -626,7 +637,10 @@ class OSRSWorld(RuleWorldMixin, World):
     def create_training(self, training_row:TrainingRow):
         parent_region = self.get_region(training_row.parent_region)
         method = OSRSLocation(self.player,f"Training {training_row.skill_name}: {training_row.task_name}",None,parent_region)
-        method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+self.options.base_training_levels.value}"))
+        if training_row.task_name == "Unlock ~|Herblore|~ after Druidic Ritual": #We don't want to be herblore 10 etc after druidic ritual
+            method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+3}"))
+        else:
+            method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+self.options.base_training_levels.value}"))
         method.show_in_spoiler = False
         parent_region.locations.append(method)
 
@@ -734,6 +748,8 @@ class HasTraining(Rule["OSRSWorld"],game="OSRSWorld"):
     qp_run: int
     qp_rise: int
     def _instantiate(self, world: "OSRSWorld") -> Rule.Resolved:
+        if self.skill_name in world.options.starting_skill_levels and self.skill_level <= world.options.starting_skill_levels[self.skill_name]:
+            return True_.Resolved(player=world.player)
         return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,tuple([f"Training_{self.skill_name}_{level}" for level in range(self.skill_level,100)]),player=world.player,cacheable=True)
 
     class Resolved(Rule.Resolved):

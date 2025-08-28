@@ -247,7 +247,6 @@ defered_region_connections: list[tuple[str,str]] = []
 
 monster_rows.append(MonsterRow("kill_Monster[+]","Macro",[]))
 
-regions["Victory"]="Victory"
 regions["Nothing :("] = "Nothing :("
 
 
@@ -631,6 +630,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
     for drop_source, drop_table in exportedJSON["drops"].items():
         if drop_source in banned_drop_items:
             continue
+        old_drop_source = drop_source
         drop_source = convert_monster_name(drop_source)
         drop_list = iterate_drop_table(drop_table,drop_source)
         if drop_list:
@@ -642,6 +642,7 @@ with open(os.path.join(this_dir, "chunkpicker-chunkinfo-export.json"), 'r') as l
             if "#" in drop_source:
                 drop_source_category = drop_source_category.split("#")[0] #just want the first section
             monster_rows.append(MonsterRow(drop_source,drop_source_category,drop_list))
+            non_quest_list.append(LocationRow(f"Kill ~|{old_drop_source}|~","Kill",drop_source,"",[],0,0,0))
     for chunk_id,sections in exportedJSON["sections"].items():
         for section_id,connections in sections.items():
             section_name = f"{chunk_id}-{section_id}"
