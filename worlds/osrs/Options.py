@@ -95,6 +95,27 @@ class MaxTrainingLevels(OptionDict):
             except ValueError:
                 self.value[key] = data
 
+
+class StartingLevels(OptionDict):
+    """
+    The starting levels that your character has prior to starting the multiworld
+    """
+    display_name = "Initial Skill Levels"
+    valid_keys = frozenset(skill_names)
+    default = {skill_name:(0 if skill_name != "Hitpoints" else 10) for skill_name in skill_names}
+    schema = Schema({
+        Optional(skill_name):And(int,lambda n: 100>= n >= 0,error="Skill Level must be integers in the range of 0-99.")
+        for skill_name in skill_names
+    })
+
+    def __init__(self, value: Dict[str, Any]):
+        self.value = {}
+        for key,data in value.items():
+            try:
+                self.value[key] = MaxTrainingLevel.from_any(data).value
+            except ValueError:
+                self.value[key] = data
+
 class MaxTrainingLevel(Range):
     default = 99
     range_start = 0
@@ -529,6 +550,7 @@ class OSRSOptions(PerGameCommonOptions):
     max_drop_rate: MaxDropRate
     full_drop_rate: FullMaxDropRate
     maximum_training_levels: MaxTrainingLevels
+    starting_skill_levels: StartingLevels
     qp_per_level: QuestPointsPerLevel
     levels_per_qp: LevelsPerQuestPoint
     base_training_levels: BaseTrainingLevels
