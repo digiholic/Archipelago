@@ -2,7 +2,7 @@ from . import OSRSTestBase
 from rule_builder import *
 from worlds.osrs import *
 import unittest
-from ..Options import MaxDropRate, FullMaxDropRate, DisableCulling
+from ..Options import MaxDropRate, FullMaxDropRate, DisableChunkCulling
 from ..LogicCSV.regions_generated2 import location_rows, sub_quests, region_rows, resource_rows, monster_drops
 
 class FullTests(OSRSTestBase):
@@ -10,7 +10,8 @@ class FullTests(OSRSTestBase):
     options = {
         "max_drop_rate": MaxDropRate.range_end,
         "full_drop_rate": FullMaxDropRate.range_end,
-        "disable_culling": True
+        "disable_chunk_culling": True,
+        "disable_task_culling": True
     }
 
     def test_creates_all_regions(self)->None:

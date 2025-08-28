@@ -30,6 +30,7 @@ class LocationRow(NamedTuple):
     name: str
     category: str
     parent_region:str
+    description:str
     rule: list[RuleElement]
     kudos_reward: int
     quest_point_reward: int
