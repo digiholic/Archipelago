@@ -121,6 +121,7 @@ class OSRSWorld(RuleWorldMixin, World):
         data = self.options.as_dict("brutal_grinds")
         data["data_csv_tag"] = data_csv_tag
         data["starting_area"] = str(self.starting_area_item) #these aren't actually strings, they just play them on tv
+        data["goal_task"] = self.options.goal_location.value
         return data
 
     def parse_rule(self, rule_element: RuleElement):
