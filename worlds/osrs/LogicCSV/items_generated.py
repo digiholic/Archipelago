@@ -91,4 +91,5 @@ item_rows = [
 	ItemRow('Care Pack: 3 Rings of Forging', 1, ItemClassification.useful),
 	ItemRow('Care Pack: 500 Rune Essence', 1, ItemClassification.useful),
 	ItemRow('Care Pack: 200 Mind Runes', 1, ItemClassification.useful),
+	ItemRow('Tear of Guthix', 0, ItemClassification.progression),
 ]
