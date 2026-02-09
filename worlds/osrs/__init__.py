@@ -79,6 +79,7 @@ class OSRSWorld(World):
 
         self.locations_by_category = {}
         self.available_QP_locations = []
+        self.bingo_board:list[list[str]] = []
 
     def generate_early(self) -> None:
         location_categories = [location_row.category for location_row in location_rows]
@@ -106,6 +107,10 @@ class OSRSWorld(World):
 
             # Set Starting Chunk
             self.multiworld.push_precollected(self.create_item(self.starting_area_item))
+
+            #setup bingo board
+            for _ in range(self.options.bingo_size.value):
+                self.bingo_board.append([]) #make the blank rows, we'll put location names in them once we
         elif hasattr(self.multiworld,"re_gen_passthrough") and self.game in self.multiworld.re_gen_passthrough:
             re_gen_passthrough = self.multiworld.re_gen_passthrough[self.game] # UT passthrough
             if "starting_area" in re_gen_passthrough:
@@ -116,6 +121,10 @@ class OSRSWorld(World):
                 max_count = getattr(self.options,f"max_{task_type}_tasks")
                 max_count.value = max_count.range_end
             self.options.brutal_grinds.value = re_gen_passthrough["brutal_grinds"]
+            if "bingo_board" in re_gen_passthrough: #backwards compatibility
+                self.bingo_board = re_gen_passthrough["bingo_board"] #type: ignore
+                self.options.goal.value = re_gen_passthrough["goal"]
+                self.options.bingo_size.value = re_gen_passthrough["bingo_size"]
 
 
 
@@ -128,6 +137,9 @@ class OSRSWorld(World):
         data = self.options.as_dict("brutal_grinds")
         data["data_csv_tag"] = data_csv_tag
         data["starting_area"] = str(self.starting_area_item) #these aren't actually strings, they just play them on tv
+        data["goal"] = self.options.goal.value
+        data["bingo_size"] = self.options.bingo_size.value
+        data["bingo_board"] = self.bingo_board
         for task_type in task_types:
             data[f"max_{task_type}_level"] = getattr(self.options,f"max_{task_type}_level").value
         return data
@@ -189,6 +201,22 @@ class OSRSWorld(World):
 
         self.roll_locations()
 
+    def write_spoiler(self, spoiler_handle: typing.TextIO):
+        if self.options.goal.value != self.options.goal.option_bingo: return
+        max_index = self.options.bingo_size.value
+        spoiler_handle.write(f"Bingo Board for Player {self.player_name}\n{' '*49}")
+        for i in range(max_index):
+            spoiler_handle.write(f"|Bingo: Col {i+1}{' '*37}")
+        spoiler_handle.write("\n")
+        for i in range(max_index):
+            spoiler_handle.write(f"Bingo: Row {i+1}{' '*37}")
+            row = self.bingo_board[i]
+            for el in row:
+                spoiler_handle.write(f"|{el}{' '*(49-len(el))}")
+            spoiler_handle.write("\n")
+        spoiler_handle.write(f"Forward Diagonal{' '*(50*max_index)}Reverse Diagonal")
+
+
     def task_within_skill_levels(self, skills_required):
         # Loop through each required skill. If any of its requirements are out of the defined limit, return false
         for skill in skills_required:
@@ -211,8 +239,13 @@ class OSRSWorld(World):
             if item_row.name.startswith("Care Pack"):
                 if not self.options.enable_carepacks:
                     continue
+            
+            #ignore the bingo items for now
+            if item_row.name.startswith("Bingo"):
+                continue
             locations_required += item_row.amount
         if self.options.enable_duds: locations_required += self.options.dud_count
+        if self.options.goal.value==self.options.goal.option_bingo: locations_required += (self.options.bingo_size.value * self.options.bingo_size.value) #square board
 
         locations_added = 0  # Keep track of the number of locations we add so we don't add more the number of items we're going to make
         # Quests are always added first, before anything else is rolled
@@ -221,10 +254,16 @@ class OSRSWorld(World):
                 if self.task_within_skill_levels(location_row.skills):
                     self.create_and_add_location(i)
                     locations_added += 1
-            elif location_row.category in {"goal"}:
+            elif location_row.category in {"goal"} and self.options.goal.value == self.options.goal.option_dragon_slayer:
                 if not self.task_within_skill_levels(location_row.skills):
                     raise OptionError(f"Goal location for {self.player_name} not allowed in skill levels") #it doesn't actually have any, but just in case for future
                 self.create_and_add_location(i)
+        if self.options.goal.value==self.options.goal.option_bingo:
+            bingo_tasks = [task for task in self.locations_by_category["bingo"]]
+            for _ in range(2+(self.options.bingo_size.value * 2)): # diagonals + n rows and cols
+                task = bingo_tasks.pop(0) #grab from front
+                self.add_location(task)
+                locations_added += 1 
 
 
         # Build up the weighted Task Pool
@@ -313,6 +352,14 @@ class OSRSWorld(World):
                 task = general_tasks.pop()
                 self.add_location(task)
                 locations_added += 1
+        
+        if self.options.goal.value == self.options.goal.option_bingo:
+            total_locations = rnd.sample( [loc for loc in self.get_locations() if loc.address is not None and loc.item is None and not loc.name.startswith("Bingo")],self.options.bingo_size.value*self.options.bingo_size)
+            for i in range(self.options.bingo_size.value):
+                for j in range(self.options.bingo_size.value):
+                    temp_loc = total_locations.pop()
+                    temp_loc.place_locked_item(self.create_item("Tear of Guthix"))
+                    self.bingo_board[i].append(temp_loc.name)
 
 
     def add_location(self, location):
@@ -419,9 +466,41 @@ class OSRSWorld(World):
             raise OptionError(f"{self.player_name} doesn't have enough quests for reach goal, increase maximum skill levels")
 
         # place "Victory" at "Dragon Slayer" and set collection as win condition
-        self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
-            .place_locked_item(self.create_event("Victory"))
-        self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
+        if self.options.goal.value == self.options.goal.option_dragon_slayer:
+            self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
+                .place_locked_item(self.create_event("Victory"))
+            self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
+        elif self.options.goal.value == self.options.goal.option_bingo:
+            self.multiworld.completion_condition[self.player] = lambda state,goal_count=(self.options.bingo_size.value*self.options.bingo_size.value): state.has("Tear of Guthix", self.player,goal_count)
+
+            #Also we need to make the rules for the board itself
+            
+            for_rules = []
+            bak_rules = []
+            max_index = self.options.bingo_size.value-1
+            for index in range(self.options.bingo_size.value):
+                temp_loc = self.get_location(self.bingo_board[index][index])
+                for_rules.append(temp_loc.parent_region.can_reach)
+                for_rules.append(temp_loc.access_rule)
+                temp_loc = self.get_location(self.bingo_board[index][max_index-index])
+                bak_rules.append(temp_loc.parent_region.can_reach)
+                bak_rules.append(temp_loc.access_rule)
+                row_rules = []
+                col_rules = []
+                for j_index in range(self.options.bingo_size.value):
+                    temp_loc = self.get_location(self.bingo_board[index][j_index])
+                    row_rules.append(temp_loc.parent_region.can_reach)
+                    row_rules.append(temp_loc.access_rule)
+                    temp_loc = self.get_location(self.bingo_board[j_index][index])
+                    col_rules.append(temp_loc.parent_region.can_reach)
+                    col_rules.append(temp_loc.access_rule)
+                self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, row_rules=row_rules: all(row_rule(state) for row_rule in row_rules)
+                self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, col_rules=col_rules: all(col_rule(state) for col_rule in col_rules)
+            self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,for_rules=for_rules: all(for_rule(state) for for_rule in for_rules)
+            self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,bak_rules=bak_rules: all(bak_rule(state) for bak_rule in bak_rules)
+
+
+        
 
         for location_name, location in self.location_name_to_data.items():
             location_row = self.location_rows_by_name[location_name]
