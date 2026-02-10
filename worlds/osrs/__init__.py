@@ -1,6 +1,6 @@
 import typing
 
-from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld
+from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState
 from worlds.AutoWorld import WebWorld, World
 from Options import OptionError
 from .Items import OSRSItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
@@ -397,6 +397,49 @@ class OSRSWorld(World):
             return self.random.choice([ItemNames.Progressive_Weapons, ItemNames.Progressive_Magic,
                                        ItemNames.Progressive_Range_Weapon, ItemNames.Progressive_Armor,
                                        ItemNames.Progressive_Range_Armor, ItemNames.Progressive_Tools])
+
+    def explain_rule(self, dest_name:str, state:CollectionState ):
+        if self.options.goal.value != self.options.goal.option_bingo: return None
+        from NetUtils import JSONMessagePart
+        ret:list[JSONMessagePart] = []
+        max_index = self.options.bingo_size.value
+        if dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
+            ret.append({"type":"text","text":"Bingo : Forward Diagonal : \n"})
+            for i in range(max_index):
+                temp_str = self.bingo_board[i][i]
+                temp_status = state.can_reach_location(temp_str,self.player)
+                ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
+        elif dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
+            ret.append({"type":"text","text":"Bingo : Reverse Diagonal : \n"})
+            for i in range(max_index):
+                temp_str = self.bingo_board[i][(max_index-1)-i]
+                temp_status = state.can_reach_location(temp_str,self.player)
+                ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
+        elif dest_name.lower().startswith("r ") or dest_name.lower().startswith("row "):
+            _,row = dest_name.split(" ",2)
+            if not row.isdecimal():
+                return None
+            row_i = int(row)-1 #zero indexing lol
+            ret.append({"type":"text","text":f"Bingo : Row {row} : \n"})
+            for i in range(max_index):
+                temp_str = self.bingo_board[row_i][i]
+                temp_status = state.can_reach_location(temp_str,self.player)
+                ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
+        elif dest_name.lower().startswith("c ") or dest_name.lower().startswith("col ") or dest_name.lower().startswith("column "):
+            _,col = dest_name.split(" ",2)
+            if not col.isdecimal():
+                return None
+            col_i = int(col)-1 #zero indexing lol
+            ret.append({"type":"text","text":f"Bingo : Column {col} : \n"})
+            for i in range(max_index):
+                temp_str = self.bingo_board[i][col_i]
+                temp_status = state.can_reach_location(temp_str,self.player)
+                ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
+        if ret:
+            return ret
+        else:
+            return None
+
 
     def create_and_add_location(self, row_index) -> None:
         location_row = location_rows[row_index]
