@@ -248,6 +248,7 @@ class OSRSWorld(World):
         if self.options.goal.value==self.options.goal.option_bingo: locations_required += (self.options.bingo_size.value * self.options.bingo_size.value) #square board
 
         locations_added = 0  # Keep track of the number of locations we add so we don't add more the number of items we're going to make
+        pre_locations = [] #Used to keep track of which tasks will be on the bingo board because the player wanted it
         # Quests are always added first, before anything else is rolled
         for i, location_row in enumerate(location_rows):
             if location_row.category in {"quest"}:
@@ -262,8 +263,20 @@ class OSRSWorld(World):
             bingo_tasks = [task for task in self.locations_by_category["bingo"]]
             for _ in range(2+(self.options.bingo_size.value * 2)): # diagonals + n rows and cols
                 task = bingo_tasks.pop(0) #grab from front
-                self.add_location(task)
-                locations_added += 1 
+                if self.add_location(task.name):
+                    locations_added += 1 
+        temp_plando_block = self.options.plando_items.value.copy()
+        for opt in temp_plando_block:
+            if isinstance(opt.count,int) and opt.count == len(opt.locations) or isinstance(opt.count,bool) and not opt.count:
+                for location in opt.locations:
+                    # ensure that every legal location plando'd is created
+                    if location in self.location_rows_by_name and self.task_within_skill_levels(self.location_rows_by_name[location].skills) and self.add_location(location):
+                        locations_added += 1
+                        if "Tear of Guthix" in opt.items:
+                            pre_locations.append(location)
+                            self.options.plando_items.value.remove(opt) #remove Tear of Guthix plandos
+
+
 
 
         # Build up the weighted Task Pool
@@ -279,17 +292,17 @@ class OSRSWorld(World):
         while general_tasks_added<self.options.minimum_general_tasks and general_tasks:
             task = general_tasks.pop()
             if self.task_within_skill_levels(task.skills):
-                self.add_location(task)
-                locations_added += 1
-                general_tasks_added += 1
+                if self.add_location(task.name):
+                    locations_added += 1 
+                    general_tasks_added += 1
         while generation_is_fake and len(general_tasks)>0:
             task = general_tasks.pop()
             if self.task_within_skill_levels(task.skills):
-                self.add_location(task)
-                locations_added += 1
-                general_tasks_added += 1
+                if self.add_location(task.name):
+                    locations_added += 1 
+                    general_tasks_added += 1
         if general_tasks_added < self.options.minimum_general_tasks:
-            raise OptionError(f"{self.plyaer_name} doesn't have enough general tasks to create required minimum count"+
+            raise OptionError(f"{self.player_name} doesn't have enough general tasks to create required minimum count"+
                               f", raise maximum skill levels or lower minimum general tasks")
 
         general_weight = self.options.general_task_weight.value if len(general_tasks) > 0 else 0
@@ -335,8 +348,8 @@ class OSRSWorld(World):
                 chosen_task = rnd.choices(all_tasks, all_weights)[0]
                 if chosen_task:
                     task = chosen_task.pop()
-                    self.add_location(task)
-                    locations_added += 1
+                    if self.add_location(task.name):
+                        locations_added += 1 
 
                 # This isn't an else because chosen_task can become empty in the process of resolving the above block
                 # We still want to clear this list out while we're doing that
@@ -350,11 +363,17 @@ class OSRSWorld(World):
                     raise OptionError(f"There are not enough available tasks to fill the remaining pool for OSRS " +
                                     f"Please adjust {self.player_name}'s settings to be less restrictive of tasks.")
                 task = general_tasks.pop()
-                self.add_location(task)
-                locations_added += 1
+                if self.add_location(task.name):
+                    locations_added += 1 
         
         if self.options.goal.value == self.options.goal.option_bingo:
-            total_locations = rnd.sample( [loc for loc in self.get_locations() if loc.address is not None and loc.item is None and not loc.name.startswith("Bingo")],self.options.bingo_size.value*self.options.bingo_size)
+            total_bingo_size = self.options.bingo_size.value*self.options.bingo_size
+            if len(pre_locations) > total_bingo_size:
+                raise OptionError("Too Many bingo rewards plando'd for the size of grid")
+            total_locations = rnd.sample( [loc for loc in self.get_locations() if loc.address is not None and loc.item is None and not loc.name.startswith("Bingo") and loc.name not in pre_locations],total_bingo_size - len(pre_locations))
+            if len(pre_locations) > 0: #if we have plando'd bingo squares
+                total_locations.extend([loc for loc in self.get_locations() if loc.address is not None and loc.name in pre_locations]) #add them back
+                rnd.shuffle(total_locations) #and shuffle
             for i in range(self.options.bingo_size.value):
                 for j in range(self.options.bingo_size.value):
                     temp_loc = total_locations.pop()
@@ -362,9 +381,9 @@ class OSRSWorld(World):
                     self.bingo_board[i].append(temp_loc.name)
 
 
-    def add_location(self, location):
-        index = [i for i in range(len(location_rows)) if location_rows[i].name == location.name][0]
-        self.create_and_add_location(index)
+    def add_location(self, location: str) -> bool:
+        index = [i for i in range(len(location_rows)) if location_rows[i].name == location][0]
+        return self.create_and_add_location(index)
 
     def create_items(self) -> None:
         filler_items:list[ItemRow] = []
@@ -441,13 +460,16 @@ class OSRSWorld(World):
             return None
 
 
-    def create_and_add_location(self, row_index) -> None:
+    def create_and_add_location(self, row_index) -> bool:
         location_row = location_rows[row_index]
 
         # Quest Points are handled differently now, but in case this gets fed an older version of the data sheet,
         # the points might still be listed in a different row
         if location_row.category == "points":
-            return
+            return False
+        # If we've already created the location don't make it again
+        if location_row.name in self.multiworld.regions.location_cache[self.player]:
+            return False
 
         # Create Location
         location_id = self.base_id + row_index
@@ -470,6 +492,7 @@ class OSRSWorld(World):
             self.location_name_to_data[points_name] = points_location
             points_location.parent_region = region
             region.locations.append(points_location)
+        return True
 
     def set_rules(self) -> None:
         """
@@ -523,18 +546,22 @@ class OSRSWorld(World):
             max_index = self.options.bingo_size.value-1
             for index in range(self.options.bingo_size.value):
                 temp_loc = self.get_location(self.bingo_board[index][index])
+                assert temp_loc.parent_region
                 for_rules.append(temp_loc.parent_region.can_reach)
                 for_rules.append(temp_loc.access_rule)
                 temp_loc = self.get_location(self.bingo_board[index][max_index-index])
+                assert temp_loc.parent_region
                 bak_rules.append(temp_loc.parent_region.can_reach)
                 bak_rules.append(temp_loc.access_rule)
                 row_rules = []
                 col_rules = []
                 for j_index in range(self.options.bingo_size.value):
                     temp_loc = self.get_location(self.bingo_board[index][j_index])
+                    assert temp_loc.parent_region
                     row_rules.append(temp_loc.parent_region.can_reach)
                     row_rules.append(temp_loc.access_rule)
                     temp_loc = self.get_location(self.bingo_board[j_index][index])
+                    assert temp_loc.parent_region
                     col_rules.append(temp_loc.parent_region.can_reach)
                     col_rules.append(temp_loc.access_rule)
                 self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, row_rules=row_rules: all(row_rule(state) for row_rule in row_rules)
