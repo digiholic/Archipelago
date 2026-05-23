@@ -189,4 +189,8 @@ location_rows = [
 	LocationRow('Bingo: Column 6', 'bingo', [], [], [], 0),
 	LocationRow('Bingo: Row 7', 'bingo', [], [], [], 0),
 	LocationRow('Bingo: Column 7', 'bingo', [], [], [], 0),
+	LocationRow('Bingo: Row 8', 'bingo', [], [], [], 0),
+	LocationRow('Bingo: Column 8', 'bingo', [], [], [], 0),
+	LocationRow('Bingo: Row 9', 'bingo', [], [], [], 0),
+	LocationRow('Bingo: Column 9', 'bingo', [], [], [], 0),
 ]

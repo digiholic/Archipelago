@@ -202,7 +202,7 @@ class OSRSWorld(World):
         self.roll_locations()
 
     def write_spoiler(self, spoiler_handle: typing.TextIO):
-        if self.options.goal.value != self.options.goal.option_bingo: return
+        if self.options.goal.value not in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]: return
         max_index = self.options.bingo_size.value
         spoiler_handle.write(f"Bingo Board for Player {self.player_name}\n{' '*49}")
         for i in range(max_index):
@@ -245,7 +245,8 @@ class OSRSWorld(World):
                 continue
             locations_required += item_row.amount
         if self.options.enable_duds: locations_required += self.options.dud_count
-        if self.options.goal.value==self.options.goal.option_bingo: locations_required += (self.options.bingo_size.value * self.options.bingo_size.value) #square board
+        if self.options.goal.value in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]: 
+            locations_required += (self.options.bingo_size.value * self.options.bingo_size.value) #square board
 
         locations_added = 0  # Keep track of the number of locations we add so we don't add more the number of items we're going to make
         pre_locations = [] #Used to keep track of which tasks will be on the bingo board because the player wanted it
@@ -255,11 +256,11 @@ class OSRSWorld(World):
                 if self.task_within_skill_levels(location_row.skills):
                     self.create_and_add_location(i)
                     locations_added += 1
-            elif location_row.category in {"goal"} and self.options.goal.value == self.options.goal.option_dragon_slayer:
+            elif location_row.category in {"goal"} and self.options.goal.value in [self.options.goal.option_dragon_slayer, self.options.goal.option_dragon_slayer_bingo]:
                 if not self.task_within_skill_levels(location_row.skills):
                     raise OptionError(f"Goal location for {self.player_name} not allowed in skill levels") #it doesn't actually have any, but just in case for future
                 self.create_and_add_location(i)
-        if self.options.goal.value==self.options.goal.option_bingo:
+        if self.options.goal.value in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]:
             bingo_tasks = [task for task in self.locations_by_category["bingo"]]
             for _ in range(2+(self.options.bingo_size.value * 2)): # diagonals + n rows and cols
                 task = bingo_tasks.pop(0) #grab from front
@@ -366,7 +367,7 @@ class OSRSWorld(World):
                 if self.add_location(task.name):
                     locations_added += 1 
         
-        if self.options.goal.value == self.options.goal.option_bingo:
+        if self.options.goal.value  in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]:
             total_bingo_size = self.options.bingo_size.value*self.options.bingo_size
             if len(pre_locations) > total_bingo_size:
                 raise OptionError("Too Many bingo rewards plando'd for the size of grid")
@@ -418,7 +419,7 @@ class OSRSWorld(World):
                                        ItemNames.Progressive_Range_Armor, ItemNames.Progressive_Tools])
 
     def explain_rule(self, dest_name:str, state:CollectionState ):
-        if self.options.goal.value != self.options.goal.option_bingo: return None
+        if self.options.goal.value not in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]: return None
         from NetUtils import JSONMessagePart
         ret:list[JSONMessagePart] = []
         max_index = self.options.bingo_size.value
@@ -528,16 +529,24 @@ class OSRSWorld(World):
         qp = 0
         for qp_event in self.available_QP_locations:
             qp += int(qp_event[0])
-        if qp < self.location_rows_by_name[LocationNames.Q_Dragon_Slayer].qp:
-            raise OptionError(f"{self.player_name} doesn't have enough quests for reach goal, increase maximum skill levels")
 
-        # place "Victory" at "Dragon Slayer" and set collection as win condition
-        if self.options.goal.value == self.options.goal.option_dragon_slayer:
+        def check_rules_list(rules:list[CollectionRule],state:CollectionState):
+            for rule in rules:
+                if not rule(state):
+                    return False
+            return True
+
+        goal_list = []
+        if self.options.goal.value in [self.options.goal.option_dragon_slayer, self.options.goal.option_dragon_slayer_bingo]:
+            
+            # place "Victory" at "Dragon Slayer" and set collection as win condition
+            if qp < self.location_rows_by_name[LocationNames.Q_Dragon_Slayer].qp:
+                raise OptionError(f"{self.player_name} doesn't have enough quests for reach goal, increase maximum skill levels")
             self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
                 .place_locked_item(self.create_event("Victory"))
-            self.multiworld.completion_condition[self.player] = lambda state: (state.has("Victory", self.player))
-        elif self.options.goal.value == self.options.goal.option_bingo:
-            self.multiworld.completion_condition[self.player] = lambda state,goal_count=(self.options.bingo_size.value*self.options.bingo_size.value): state.has("Tear of Guthix", self.player,goal_count)
+            goal_list.append(lambda state: (state.has("Victory", self.player)))
+        if self.options.goal.value in [self.options.goal.option_bingo,self.options.goal.option_dragon_slayer_bingo]:
+            goal_list.append(lambda state,goal_count=(self.options.bingo_size.value*self.options.bingo_size.value): state.has("Tear of Guthix", self.player,goal_count))
 
             #Also we need to make the rules for the board itself
             
@@ -564,10 +573,20 @@ class OSRSWorld(World):
                     assert temp_loc.parent_region
                     col_rules.append(temp_loc.parent_region.can_reach)
                     col_rules.append(temp_loc.access_rule)
+                self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, rule_list=row_rules: check_rules_list(rule_list,state)
+                self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, rule_list=col_rules: check_rules_list(rule_list,state)
+            self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,rule_list=for_rules: check_rules_list(rule_list,state)
+            self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,rule_list=bak_rules: check_rules_list(rule_list,state)
                 self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, row_rules=row_rules: all(row_rule(state) for row_rule in row_rules)
                 self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, col_rules=col_rules: all(col_rule(state) for col_rule in col_rules)
             self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,for_rules=for_rules: all(for_rule(state) for for_rule in for_rules)
             self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,bak_rules=bak_rules: all(bak_rule(state) for bak_rule in bak_rules)
+
+
+        if len(goal_list)<1:
+            raise OptionError("No goal selected... Somehow")
+        else:
+            self.multiworld.completion_condition[self.player] = lambda state, rule_list=goal_list: check_rules_list(rule_list,state) 
 
 
         
