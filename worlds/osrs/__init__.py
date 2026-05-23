@@ -65,6 +65,12 @@ class OSRSWorld(World):
     locations_by_category: typing.Dict[str, typing.List[LocationRow]]
     available_QP_locations: typing.List[str]
 
+    tracker_world: typing.ClassVar = {
+        "map_page_folder": "pack",
+        "map_page_maps": "jsons/maps.json",
+        "map_page_locations": "jsons/locations.json"
+    }
+
     def __init__(self, multiworld: MultiWorld, player: int):
         super().__init__(multiworld, player)
         self.region_name_to_data = {}
@@ -577,10 +583,14 @@ class OSRSWorld(World):
                 self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, rule_list=col_rules: check_rules_list(rule_list,state)
             self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,rule_list=for_rules: check_rules_list(rule_list,state)
             self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,rule_list=bak_rules: check_rules_list(rule_list,state)
-                self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, row_rules=row_rules: all(row_rule(state) for row_rule in row_rules)
-                self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, col_rules=col_rules: all(col_rule(state) for col_rule in col_rules)
-            self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,for_rules=for_rules: all(for_rule(state) for for_rule in for_rules)
-            self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,bak_rules=bak_rules: all(bak_rule(state) for bak_rule in bak_rules)
+            if hasattr(self.multiworld,"generation_is_fake"):
+                #Make some entrances for the bingo board map tab, these are all useless logically but their ability to be transversed will still be important
+                menu_region = self.get_region("Menu") #they're all just going to connect menu to itself
+                for index in range(self.options.bingo_size.value):
+                    for j_index in range(self.options.bingo_size.value):
+                        loc_name=self.bingo_board[index][j_index]
+                        fake_region = self.create_region(f"Bingo: {loc_name}")
+                        menu_region.connect(fake_region,f"Bingo: R{index+1}C{j_index+1}",lambda state,loc_name=loc_name: state.can_reach_location(loc_name,self.player))
 
 
         if len(goal_list)<1:
