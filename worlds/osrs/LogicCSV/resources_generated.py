@@ -31,6 +31,7 @@ resource_rows = [
 	ResourceRow('Milk'),
 	ResourceRow('Cheese'),
 	ResourceRow('Tomato'),
+	ResourceRow('Tree'),
 	ResourceRow('Oak Tree'),
 	ResourceRow('Willow Tree'),
 	ResourceRow('Canoe Tree'),
@@ -58,4 +59,5 @@ resource_rows = [
 	ResourceRow('Bar'),
 	ResourceRow('Haystack'),
 	ResourceRow('Red Spider Eggs'),
+	ResourceRow('Stray Dog'),
 ]

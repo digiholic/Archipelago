@@ -57,7 +57,7 @@ item_rows = [
 	ItemRow('A Review on that Pull Request You\'ve Been Waiting On', 1, ItemClassification.filler),
 	ItemRow('Fifty Billion RS3 GP (Worthless)', 1, ItemClassification.filler),
 	ItemRow('Mod Ash\'s Coffee Cup', 1, ItemClassification.filler),
-	ItemRow('An Embarrasing Photo of Zammorak at the Christmas Party', 1, ItemClassification.filler),
+	ItemRow('An Embarrasing Photo of Zamorak at the Christmas Party', 1, ItemClassification.filler),
 	ItemRow('Another Bug To Report', 1, ItemClassification.filler),
 	ItemRow('1-Up Mushroom', 1, ItemClassification.filler),
 	ItemRow('Empty White Hallways', 1, ItemClassification.filler),
