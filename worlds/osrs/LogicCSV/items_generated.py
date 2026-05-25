@@ -57,7 +57,7 @@ item_rows = [
 	ItemRow('A Review on that Pull Request You\'ve Been Waiting On', 1, ItemClassification.filler),
 	ItemRow('Fifty Billion RS3 GP (Worthless)', 1, ItemClassification.filler),
 	ItemRow('Mod Ash\'s Coffee Cup', 1, ItemClassification.filler),
-	ItemRow('An Embarrasing Photo of Zammorak at the Christmas Party', 1, ItemClassification.filler),
+	ItemRow('An Embarrasing Photo of Zamorak at the Christmas Party', 1, ItemClassification.filler),
 	ItemRow('Another Bug To Report', 1, ItemClassification.filler),
 	ItemRow('1-Up Mushroom', 1, ItemClassification.filler),
 	ItemRow('Empty White Hallways', 1, ItemClassification.filler),
@@ -91,4 +91,5 @@ item_rows = [
 	ItemRow('Care Pack: 3 Rings of Forging', 1, ItemClassification.useful),
 	ItemRow('Care Pack: 500 Rune Essence', 1, ItemClassification.useful),
 	ItemRow('Care Pack: 200 Mind Runes', 1, ItemClassification.useful),
+	ItemRow('Tear of Guthix', 0, ItemClassification.progression),
 ]
