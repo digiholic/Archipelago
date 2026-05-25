@@ -229,6 +229,8 @@ def generate_special_rules_for(entrance, region_row, outbound_region_name, playe
         add_rule(entrance, lambda state: state.has(ItemNames.QP_Below_Ice_Mountain, player))
     elif region_row.name == "Dwarven Mountain Pass" and outbound_region_name == "Anvil*":
         add_rule(entrance, lambda state: state.has(ItemNames.QP_Dorics_Quest, player))
+    elif outbound_region_name == "Rune Essence":
+        add_rule(entrance, lambda state: state.has(ItemNames.QP_Rune_Mysteries, player))
     elif outbound_region_name == RegionNames.Crandor:
         add_rule(entrance, lambda state: state.can_reach_region(RegionNames.South_Of_Varrock, player))
         add_rule(entrance, lambda state: state.can_reach_region(RegionNames.Edgeville, player))
