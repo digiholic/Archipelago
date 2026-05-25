@@ -39,9 +39,7 @@ def get_woodcutting_skill_rule(level, player, options) -> CollectionRule:
         return lambda state: False
 
     if options.brutal_grinds or level < 15:
-        # I've checked. There is not a single chunk in the f2p that does not have at least one normal tree.
-        # Even the desert.
-        return lambda state: True
+        return lambda state: state.can_reach_region(RegionNames.Tree, player)
     if level < 30:
         return lambda state: state.can_reach_region(RegionNames.Oak_Tree, player)
     else:

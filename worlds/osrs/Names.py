@@ -49,6 +49,7 @@ class RegionNames(str, Enum):
     Gold_Rock = "Gold Ore"
     Furnace = "Furnace"
     Anvil = "Anvil"
+    Tree = "Tree"
     Oak_Tree = "Oak Tree"
     Willow_Tree = "Willow Tree"
     Shrimp = "Shrimp Spot"
