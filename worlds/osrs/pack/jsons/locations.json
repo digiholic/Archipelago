@@ -1,0 +1,1118 @@
+[
+    {
+        "name":"Bingo Board",
+        "children":[
+            {
+                "name":"Bingo: Row 1",
+                "sections":[
+                    {"name":"Bingo: Row 1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: Row 2",
+                "sections":[
+                    {"name":"Bingo: Row 2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: Row 3",
+                "sections":[
+                    {"name":"Bingo: Row 3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: Row 4",
+                "sections":[
+                    {"name":"Bingo: Row 4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: Row 5",
+                "sections":[
+                    {"name":"Bingo: Row 5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: Row 6",
+                "sections":[
+                    {"name":"Bingo: Row 6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: Row 7",
+                "sections":[
+                    {"name":"Bingo: Row 7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: Row 8",
+                "sections":[
+                    {"name":"Bingo: Row 8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: Row 9",
+                "sections":[
+                    {"name":"Bingo: Row 9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: Column 1",
+                "sections":[
+                    {"name":"Bingo: Column 1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 2",
+                "sections":[
+                    {"name":"Bingo: Column 2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 3",
+                "sections":[
+                    {"name":"Bingo: Column 3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 4",
+                "sections":[
+                    {"name":"Bingo: Column 4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 5",
+                "sections":[
+                    {"name":"Bingo: Column 5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 6",
+                "sections":[
+                    {"name":"Bingo: Column 6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 7",
+                "sections":[
+                    {"name":"Bingo: Column 7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 8",
+                "sections":[
+                    {"name":"Bingo: Column 8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Column 9",
+                "sections":[
+                    {"name":"Bingo: Column 9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":50
+                }]
+            },
+            {
+                "name":"Bingo: Forward Diagonal",
+                "sections":[
+                    {"name":"Bingo: Forward Diagonal"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":50,
+                    "y":550
+                }]
+            },
+            {
+                "name":"Bingo: Reverse Diagonal",
+                "sections":[
+                    {"name":"Bingo: Reverse Diagonal"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":550,
+                    "y":550
+                }]
+            },
+            {
+                "name":"Bingo: R1C1",
+                "sections":[
+                    {"name":"Bingo: R1C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C2",
+                "sections":[
+                    {"name":"Bingo: R1C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C3",
+                "sections":[
+                    {"name":"Bingo: R1C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C4",
+                "sections":[
+                    {"name":"Bingo: R1C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C5",
+                "sections":[
+                    {"name":"Bingo: R1C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C6",
+                "sections":[
+                    {"name":"Bingo: R1C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C7",
+                "sections":[
+                    {"name":"Bingo: R1C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C8",
+                "sections":[
+                    {"name":"Bingo: R1C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R1C9",
+                "sections":[
+                    {"name":"Bingo: R1C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":100
+                }]
+            },
+            {
+                "name":"Bingo: R2C1",
+                "sections":[
+                    {"name":"Bingo: R2C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C2",
+                "sections":[
+                    {"name":"Bingo: R2C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C3",
+                "sections":[
+                    {"name":"Bingo: R2C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C4",
+                "sections":[
+                    {"name":"Bingo: R2C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C5",
+                "sections":[
+                    {"name":"Bingo: R2C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C6",
+                "sections":[
+                    {"name":"Bingo: R2C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C7",
+                "sections":[
+                    {"name":"Bingo: R2C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C8",
+                "sections":[
+                    {"name":"Bingo: R2C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R2C9",
+                "sections":[
+                    {"name":"Bingo: R2C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":150
+                }]
+            },
+            {
+                "name":"Bingo: R3C1",
+                "sections":[
+                    {"name":"Bingo: R3C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C2",
+                "sections":[
+                    {"name":"Bingo: R3C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C3",
+                "sections":[
+                    {"name":"Bingo: R3C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C4",
+                "sections":[
+                    {"name":"Bingo: R3C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C5",
+                "sections":[
+                    {"name":"Bingo: R3C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C6",
+                "sections":[
+                    {"name":"Bingo: R3C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C7",
+                "sections":[
+                    {"name":"Bingo: R3C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C8",
+                "sections":[
+                    {"name":"Bingo: R3C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R3C9",
+                "sections":[
+                    {"name":"Bingo: R3C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":200
+                }]
+            },
+            {
+                "name":"Bingo: R4C1",
+                "sections":[
+                    {"name":"Bingo: R4C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C2",
+                "sections":[
+                    {"name":"Bingo: R4C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C3",
+                "sections":[
+                    {"name":"Bingo: R4C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C4",
+                "sections":[
+                    {"name":"Bingo: R4C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C5",
+                "sections":[
+                    {"name":"Bingo: R4C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C6",
+                "sections":[
+                    {"name":"Bingo: R4C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C7",
+                "sections":[
+                    {"name":"Bingo: R4C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C8",
+                "sections":[
+                    {"name":"Bingo: R4C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R4C9",
+                "sections":[
+                    {"name":"Bingo: R4C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":250
+                }]
+            },
+            {
+                "name":"Bingo: R5C1",
+                "sections":[
+                    {"name":"Bingo: R5C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C2",
+                "sections":[
+                    {"name":"Bingo: R5C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C3",
+                "sections":[
+                    {"name":"Bingo: R5C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C4",
+                "sections":[
+                    {"name":"Bingo: R5C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C5",
+                "sections":[
+                    {"name":"Bingo: R5C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C6",
+                "sections":[
+                    {"name":"Bingo: R5C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C7",
+                "sections":[
+                    {"name":"Bingo: R5C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C8",
+                "sections":[
+                    {"name":"Bingo: R5C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R5C9",
+                "sections":[
+                    {"name":"Bingo: R5C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":300
+                }]
+            },
+            {
+                "name":"Bingo: R6C1",
+                "sections":[
+                    {"name":"Bingo: R6C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C2",
+                "sections":[
+                    {"name":"Bingo: R6C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C3",
+                "sections":[
+                    {"name":"Bingo: R6C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C4",
+                "sections":[
+                    {"name":"Bingo: R6C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C5",
+                "sections":[
+                    {"name":"Bingo: R6C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C6",
+                "sections":[
+                    {"name":"Bingo: R6C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C7",
+                "sections":[
+                    {"name":"Bingo: R6C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C8",
+                "sections":[
+                    {"name":"Bingo: R6C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R6C9",
+                "sections":[
+                    {"name":"Bingo: R6C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":350
+                }]
+            },
+            {
+                "name":"Bingo: R7C1",
+                "sections":[
+                    {"name":"Bingo: R7C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C2",
+                "sections":[
+                    {"name":"Bingo: R7C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C3",
+                "sections":[
+                    {"name":"Bingo: R7C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C4",
+                "sections":[
+                    {"name":"Bingo: R7C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C5",
+                "sections":[
+                    {"name":"Bingo: R7C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C6",
+                "sections":[
+                    {"name":"Bingo: R7C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C7",
+                "sections":[
+                    {"name":"Bingo: R7C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C8",
+                "sections":[
+                    {"name":"Bingo: R7C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R7C9",
+                "sections":[
+                    {"name":"Bingo: R7C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":400
+                }]
+            },
+            {
+                "name":"Bingo: R8C1",
+                "sections":[
+                    {"name":"Bingo: R8C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C2",
+                "sections":[
+                    {"name":"Bingo: R8C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C3",
+                "sections":[
+                    {"name":"Bingo: R8C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C4",
+                "sections":[
+                    {"name":"Bingo: R8C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C5",
+                "sections":[
+                    {"name":"Bingo: R8C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C6",
+                "sections":[
+                    {"name":"Bingo: R8C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C7",
+                "sections":[
+                    {"name":"Bingo: R8C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C8",
+                "sections":[
+                    {"name":"Bingo: R8C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R8C9",
+                "sections":[
+                    {"name":"Bingo: R8C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":450
+                }]
+            },
+            {
+                "name":"Bingo: R9C1",
+                "sections":[
+                    {"name":"Bingo: R9C1"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":100,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C2",
+                "sections":[
+                    {"name":"Bingo: R9C2"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":150,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C3",
+                "sections":[
+                    {"name":"Bingo: R9C3"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":200,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C4",
+                "sections":[
+                    {"name":"Bingo: R9C4"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":250,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C5",
+                "sections":[
+                    {"name":"Bingo: R9C5"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":300,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C6",
+                "sections":[
+                    {"name":"Bingo: R9C6"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":350,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C7",
+                "sections":[
+                    {"name":"Bingo: R9C7"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":400,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C8",
+                "sections":[
+                    {"name":"Bingo: R9C8"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":450,
+                    "y":500
+                }]
+            },
+            {
+                "name":"Bingo: R9C9",
+                "sections":[
+                    {"name":"Bingo: R9C9"}
+                ],
+                "map_locations":[{
+                    "map":"overview",
+                    "x":500,
+                    "y":500
+                }]
+            }
+        ]
+    }
+]

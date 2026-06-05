@@ -39,6 +39,26 @@ class StartingArea(Choice):
     option_chunksanity = 9
     default = 0
 
+class OSRSGoal(Choice):
+    """
+    Goal required to "win" OSRS
+
+    Dragon Slayer = Finish the quest Dragon Slayer 1
+    Bingo = Fully complete a generated bingo board
+    Dragon Slayer Bingo = Finish the quest Dragon Slayer 1, while also clearing a bingo board
+    """
+    display_name = "Goal"
+    option_dragon_slayer = 0
+    option_bingo = 1
+    option_dragon_slayer_bingo = 2
+    default = 0
+
+class BingoSize(Range):
+    """The Size of the bingo board, only relevent for bingo goal"""
+    display_name = "Bingo Board Size"
+    range_start = 3
+    range_end = 9
+    default = 5
 
 class BrutalGrinds(Toggle):
     """
@@ -496,6 +516,8 @@ class GeneralTaskWeight(Range):
 @dataclass
 class OSRSOptions(PerGameCommonOptions):
     starting_area: StartingArea
+    goal: OSRSGoal
+    bingo_size: BingoSize
     brutal_grinds: BrutalGrinds
     progressive_tasks: ProgressiveTasks
     enable_duds: EnableDuds
