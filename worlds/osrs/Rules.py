@@ -177,7 +177,7 @@ def get_skill_rule(skill, level, options) -> Rule:
     return True_()
 
 
-def generate_special_rules_for(entrance, region_row, outbound_region_name, player, options, world, base_rule=None) -> Rule:
+def generate_special_rules_for(entrance, region_row, outbound_region_name, options, base_rule=None) -> Rule:
     rule_list:list[Rule] = []
     if base_rule is not None:
         rule_list.append(base_rule)
@@ -192,11 +192,11 @@ def generate_special_rules_for(entrance, region_row, outbound_region_name, playe
         # Need to be able to start Corsair Curse in addition to having the item
         rule_list.append( CanReachRegion(RegionNames.Falador_Farm))
     elif outbound_region_name == "Camdozaal*":
-        rule_list.append( Has(ItemNames.QP_Below_Ice_Mountain, player))
+        rule_list.append( Has(ItemNames.QP_Below_Ice_Mountain))
     elif region_row.name == "Dwarven Mountain Pass" and outbound_region_name == "Anvil*":
-        rule_list.append( Has(ItemNames.QP_Dorics_Quest, player))
+        rule_list.append( Has(ItemNames.QP_Dorics_Quest))
     elif outbound_region_name == "Rune Essence":
-        rule_list.append( Has(ItemNames.QP_Rune_Mysteries, player))
+        rule_list.append( Has(ItemNames.QP_Rune_Mysteries))
     elif outbound_region_name == RegionNames.Crandor:
         rule_list.append( And(
                 CanReachRegion(RegionNames.South_Of_Varrock),
