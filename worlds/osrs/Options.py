@@ -24,6 +24,7 @@ class StartingArea(Choice):
     area, but any areas that require quests, skills, or coins are not available as a starting location.
 
     "Any Bank" rolls a random region that contains a bank.
+    "No Bank" rolls a random region that *doesn't* contain a bank, have fun!
     Chunksanity can start you in any chunk. Hope you like woodcutting!
     """
     display_name = "Starting Region"
@@ -35,9 +36,25 @@ class StartingArea(Choice):
     option_falador = 5
     option_draynor = 6
     option_wilderness = 7
-    option_any_bank = 8
-    option_chunksanity = 9
+    option_no_bank = 8
+    option_any_bank = 9
+    option_chunksanity = 10
     default = 0
+
+    @classmethod
+    def from_text(cls, text: str) -> Choice:
+        from .Items import all_starting_area_dict
+        canadites = [item for item, name in all_starting_area_dict.items() if name.lower()[6:] == text.lower() ] # ignore the "Area: " prefix
+        if len(canadites) == 1: # Error on any non-exact match
+            return StartingArea(canadites[0])
+        return super().from_text(text)
+    
+    @classmethod
+    def get_option_name(cls, value: int) -> str:
+        from .Items import all_starting_area_dict
+        if value in all_starting_area_dict:
+            return all_starting_area_dict[value][6:]
+        return super().get_option_name(value)
 
 class OSRSGoal(Choice):
     """

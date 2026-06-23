@@ -78,6 +78,11 @@ chunksanity_starting_chunks: typing.List[str] = [
     ItemNames.Wilderness
 ]
 
+# Have to skip three names for any bank, no bank, and chunksanity
+non_starting_area_dict: typing.Dict[int, str] = { idx + 3 + len(starting_area_dict) : name for idx,name in enumerate(chunksanity_starting_chunks)}
+
+all_starting_area_dict: typing.Dict[int, str] = starting_area_dict|non_starting_area_dict
+
 # Some starting areas contain multiple regions, so if that area is rolled for Chunksanity, we need to map it to one
 chunksanity_special_region_names: typing.Dict[str, str] = {
     ItemNames.Lumbridge_Farms: 'Lumbridge Farms East',
