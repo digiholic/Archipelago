@@ -1,12 +1,13 @@
 import typing
 
-from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState
+from BaseClasses import CollectionState, Item, Tutorial, ItemClassification, Region, MultiWorld
 from worlds.AutoWorld import WebWorld, World
 from Options import OptionError
 from .Items import OSRSItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
     chunksanity_special_region_names
 from .Locations import OSRSLocation, LocationRow, task_types
 from .Rules import *
+from rule_builder.rules import *
 from .Options import OSRSOptions, StartingArea
 from .Names import LocationNames, ItemNames, RegionNames
 
@@ -178,7 +179,7 @@ class OSRSWorld(World):
             else:
                 starting_area_region = self.starting_area_item[6:]  # len("Area: ")
             starting_entrance = menu_region.create_exit(f"Start->{starting_area_region}")
-            starting_entrance.access_rule = lambda state: state.has(self.starting_area_item, self.player)
+            self.set_rule(starting_entrance, Has(self.starting_area_item))
             starting_entrance.connect(self.region_name_to_data[starting_area_region])
 
         # Create entrances between regions
@@ -191,8 +192,7 @@ class OSRSWorld(World):
                 entrance.connect(self.region_name_to_data[parsed_outbound])
 
                 item_name = self.region_rows_by_name[parsed_outbound].itemReq
-                entrance.access_rule = lambda state, item_name=item_name.replace("*",""): state.has(item_name, self.player)
-                generate_special_rules_for(entrance, region_row, outbound_region_name, self.player, self.options, self)
+                self.set_rule(entrance,generate_special_rules_for(entrance, region_row, outbound_region_name, self.options,Has(item_name.replace("*",""))))
 
             for resource_region in region_row.resources:
                 if not resource_region:
@@ -203,7 +203,7 @@ class OSRSWorld(World):
                     entrance.connect(self.region_name_to_data[resource_region])
                 else:
                     entrance.connect(self.region_name_to_data[resource_region.replace('*', '')])
-                generate_special_rules_for(entrance, region_row, resource_region, self.player, self.options, self)
+                self.set_rule(entrance,generate_special_rules_for(entrance, region_row, resource_region, self.options))
 
         self.roll_locations()
 
@@ -505,6 +505,25 @@ class OSRSWorld(World):
         """
         called to set access and item rules on locations and entrances.
         """
+
+        for location_name, location in self.location_name_to_data.items():
+            rule_list:list[Rule] = []
+            location_row = self.location_rows_by_name[location_name]
+            # Set up requirements for region
+            for region_required_name in location_row.regions:
+                region_required = self.region_name_to_data[region_required_name]
+                rule_list.append(CanReachRegion(region_required.name))
+            for skill_req in location_row.skills:
+                rule_list.append(get_skill_rule(skill_req.skill, skill_req.level, self.options))
+            for item_req in location_row.items:
+                rule_list.append(Has(item_req))
+            if location_row.qp:
+                rule_list.append(Has("Quest Point", location_row.qp))
+            if rule_list:
+                self.set_rule(location,And(*rule_list))
+            else:
+                self.set_rule(location,True_()) #If we don't have any rule fragments to use, it's always accessable
+        
         quest_attr_names = ["Cooks_Assistant", "Demon_Slayer", "Restless_Ghost", "Romeo_Juliet",
                             "Sheep_Shearer", "Shield_of_Arrav", "Ernest_the_Chicken", "Vampyre_Slayer",
                             "Imp_Catcher", "Prince_Ali_Rescue", "Dorics_Quest", "Black_Knights_Fortress",
@@ -527,20 +546,14 @@ class OSRSWorld(World):
 
                 # If a quest is excluded, don't actually consider it for quest point progression
                 if q_loc_name not in self.options.exclude_locations:
-                    self.available_QP_locations.append(item_name)
+                    self.available_QP_locations.append(str(item_name))
 
                 # Set the access rule for the QP Location
-                add_rule(qp_loc, lambda state, loc=q_loc: (loc.can_reach(state)))
+                self.set_rule(qp_loc, CanReachLocation(q_loc.name))
 
         qp = 0
         for qp_event in self.available_QP_locations:
             qp += int(qp_event[0])
-
-        def check_rules_list(rules:list[CollectionRule],state:CollectionState):
-            for rule in rules:
-                if not rule(state):
-                    return False
-            return True
 
         goal_list = []
         if self.options.goal.value in [self.options.goal.option_dragon_slayer, self.options.goal.option_dragon_slayer_bingo]:
@@ -550,39 +563,35 @@ class OSRSWorld(World):
                 raise OptionError(f"{self.player_name} doesn't have enough quests for reach goal, increase maximum skill levels")
             self.multiworld.get_location(LocationNames.Q_Dragon_Slayer, self.player) \
                 .place_locked_item(self.create_event("Victory"))
-            goal_list.append(lambda state: (state.has("Victory", self.player)))
+            goal_list.append(Has("Victory"))
         if self.options.goal.value in [self.options.goal.option_bingo,self.options.goal.option_dragon_slayer_bingo]:
-            goal_list.append(lambda state,goal_count=(self.options.bingo_size.value*self.options.bingo_size.value): state.has("Tear of Guthix", self.player,goal_count))
+            goal_list.append(Has("Tear of Guthix", (self.options.bingo_size.value*self.options.bingo_size.value)))
 
             #Also we need to make the rules for the board itself
             
-            for_rules = []
-            bak_rules = []
+            for_rules:list[Rule] = []
+            bak_rules:list[Rule] = []
             max_index = self.options.bingo_size.value-1
             for index in range(self.options.bingo_size.value):
                 temp_loc = self.get_location(self.bingo_board[index][index])
                 assert temp_loc.parent_region
-                for_rules.append(temp_loc.parent_region.can_reach)
-                for_rules.append(temp_loc.access_rule)
+                for_rules.append(CanReachLocation(temp_loc.name))
                 temp_loc = self.get_location(self.bingo_board[index][max_index-index])
                 assert temp_loc.parent_region
-                bak_rules.append(temp_loc.parent_region.can_reach)
-                bak_rules.append(temp_loc.access_rule)
-                row_rules = []
-                col_rules = []
+                bak_rules.append(CanReachLocation(temp_loc.name))
+                row_rules:list[Rule] = []
+                col_rules:list[Rule] = []
                 for j_index in range(self.options.bingo_size.value):
                     temp_loc = self.get_location(self.bingo_board[index][j_index])
                     assert temp_loc.parent_region
-                    row_rules.append(temp_loc.parent_region.can_reach)
-                    row_rules.append(temp_loc.access_rule)
+                    row_rules.append(CanReachLocation(temp_loc.name))
                     temp_loc = self.get_location(self.bingo_board[j_index][index])
                     assert temp_loc.parent_region
-                    col_rules.append(temp_loc.parent_region.can_reach)
-                    col_rules.append(temp_loc.access_rule)
-                self.get_location(f"Bingo: Row {index+1}").access_rule=lambda state, rule_list=row_rules: check_rules_list(rule_list,state)
-                self.get_location(f"Bingo: Column {index+1}").access_rule=lambda state, rule_list=col_rules: check_rules_list(rule_list,state)
-            self.get_location("Bingo: Forward Diagonal").access_rule=lambda state,rule_list=for_rules: check_rules_list(rule_list,state)
-            self.get_location("Bingo: Reverse Diagonal").access_rule=lambda state,rule_list=bak_rules: check_rules_list(rule_list,state)
+                    col_rules.append(CanReachLocation(temp_loc.name))
+                self.set_rule(self.get_location(f"Bingo: Row {index+1}"),And(*row_rules))
+                self.set_rule(self.get_location(f"Bingo: Column {index+1}"),And(*col_rules))
+            self.set_rule(self.get_location("Bingo: Forward Diagonal"), And(*for_rules))
+            self.set_rule(self.get_location("Bingo: Reverse Diagonal"), And(*bak_rules))
             if hasattr(self.multiworld,"generation_is_fake"):
                 #Make some entrances for the bingo board map tab, these are all useless logically but their ability to be transversed will still be important
                 menu_region = self.get_region("Menu") #they're all just going to connect menu to itself
@@ -590,31 +599,16 @@ class OSRSWorld(World):
                     for j_index in range(self.options.bingo_size.value):
                         loc_name=self.bingo_board[index][j_index]
                         fake_region = self.create_region(f"Bingo: {loc_name}")
-                        menu_region.connect(fake_region,f"Bingo: R{index+1}C{j_index+1}",lambda state,loc_name=loc_name: state.can_reach_location(loc_name,self.player))
+                        menu_region.connect(fake_region,f"Bingo: R{index+1}C{j_index+1}",CanReachLocation(loc_name))
 
 
         if len(goal_list)<1:
             raise OptionError("No goal selected... Somehow")
         else:
-            self.multiworld.completion_condition[self.player] = lambda state, rule_list=goal_list: check_rules_list(rule_list,state) 
+            self.set_completion_rule(And(*goal_list))
 
 
         
-
-        for location_name, location in self.location_name_to_data.items():
-            location_row = self.location_rows_by_name[location_name]
-            # Set up requirements for region
-            for region_required_name in location_row.regions:
-                region_required = self.region_name_to_data[region_required_name]
-                add_rule(location,
-                         lambda state, region_required=region_required: state.can_reach(region_required, "Region",
-                                                                                        self.player))
-            for skill_req in location_row.skills:
-                add_rule(location, get_skill_rule(skill_req.skill, skill_req.level, self.player, self.options))
-            for item_req in location_row.items:
-                add_rule(location, lambda state, item_req=item_req: state.has(item_req, self.player))
-            if location_row.qp:
-                add_rule(location, lambda state, location_row=location_row: self.quest_points(state) > location_row.qp)
 
     def create_region(self, name: str) -> "Region":
         region = Region(name, self.player, self.multiworld)
@@ -632,11 +626,15 @@ class OSRSWorld(World):
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
         return OSRSItem(event, ItemClassification.progression, None, self.player)
-
-    def quest_points(self, state):
-        qp = 0
-        for qp_event in self.available_QP_locations:
-            if state.has(qp_event, self.player):
-                qp += int(qp_event[0])
-        return qp
-
+    
+    def collect(self, state: CollectionState, item: Item) -> bool:
+        if item.name in self.available_QP_locations:
+            qp = int(item.name[0])
+            state.add_item(item="Quest Point",player=self.player,count=qp)
+        return super().collect(state, item)
+    
+    def remove(self, state: CollectionState, item: Item) -> bool:
+        if item.name in self.available_QP_locations:
+            qp = int(item.name[0])
+            state.remove_item(item="Quest Point",player=self.player,count=qp)
+        return super().remove(state, item)
