@@ -112,7 +112,6 @@ class OSRSWorld(World):
                 self.starting_area_item = rnd.choice(chunksanity_starting_chunks)
             else:
                 self.starting_area_item = all_starting_area_dict[starting_area.value]
-            print(self.starting_area_item)
 
             # Set Starting Chunk
             self.multiworld.push_precollected(self.create_item(self.starting_area_item))
