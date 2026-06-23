@@ -79,7 +79,7 @@ chunksanity_starting_chunks: typing.List[str] = [
 ]
 
 # Have to skip three names for any bank, no bank, and chunksanity
-non_starting_area_dict: typing.Dict[int, str] = { idx + 3 + len(starting_area_dict) : name for idx,name in enumerate(chunksanity_starting_chunks)}
+non_starting_area_dict: typing.Dict[int, str] = { idx + 3 + len(starting_area_dict) : name for idx,name in enumerate(chunksanity_starting_chunks) if name not in starting_area_dict.values()}
 
 all_starting_area_dict: typing.Dict[int, str] = starting_area_dict|non_starting_area_dict
 

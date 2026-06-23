@@ -105,13 +105,14 @@ class OSRSWorld(World):
         #UT specific override, if we are in normal gen, resolve starting area, we will get it from slot_data in UT
         if not hasattr(self.multiworld, "generation_is_fake"):
             if starting_area.value == StartingArea.option_any_bank:
-                self.starting_area_item = rnd.choice(starting_area_dict)
-            if starting_area.value == StartingArea.option_no_bank:
-                self.starting_area_item = rnd.choice(non_starting_area_dict)
+                self.starting_area_item = rnd.choice(list(starting_area_dict.values()))
+            elif starting_area.value == StartingArea.option_no_bank:
+                self.starting_area_item = rnd.choice(list(non_starting_area_dict.values()))
             elif starting_area.value == StartingArea.option_chunksanity:
                 self.starting_area_item = rnd.choice(chunksanity_starting_chunks)
             else:
                 self.starting_area_item = all_starting_area_dict[starting_area.value]
+            print(self.starting_area_item)
 
             # Set Starting Chunk
             self.multiworld.push_precollected(self.create_item(self.starting_area_item))
