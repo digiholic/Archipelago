@@ -3,7 +3,7 @@ import typing
 from BaseClasses import Item, Tutorial, ItemClassification, Region, MultiWorld, CollectionState
 from worlds.AutoWorld import WebWorld, World
 from Options import OptionError
-from .Items import OSRSItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
+from .Items import OSRSItem, non_starting_area_dict, starting_area_dict, all_starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
     chunksanity_special_region_names
 from .Locations import OSRSLocation, LocationRow, task_types
 from .Rules import *
@@ -106,10 +106,12 @@ class OSRSWorld(World):
         if not hasattr(self.multiworld, "generation_is_fake"):
             if starting_area.value == StartingArea.option_any_bank:
                 self.starting_area_item = rnd.choice(starting_area_dict)
-            elif starting_area.value < StartingArea.option_chunksanity:
-                self.starting_area_item = starting_area_dict[starting_area.value]
-            else:
+            if starting_area.value == StartingArea.option_no_bank:
+                self.starting_area_item = rnd.choice(non_starting_area_dict)
+            elif starting_area.value == StartingArea.option_chunksanity:
                 self.starting_area_item = rnd.choice(chunksanity_starting_chunks)
+            else:
+                self.starting_area_item = all_starting_area_dict[starting_area.value]
 
             # Set Starting Chunk
             self.multiworld.push_precollected(self.create_item(self.starting_area_item))
