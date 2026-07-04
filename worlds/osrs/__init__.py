@@ -427,6 +427,9 @@ class OSRSWorld(World):
                                        ItemNames.Progressive_Range_Armor, ItemNames.Progressive_Tools])
 
     def explain_rule(self, dest_name:str, state:CollectionState ):
+        """
+        training [skill] [level] - get the explained rule for a given skill training
+        """
         bingo = self.options.goal.value in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]
         from NetUtils import JSONMessagePart
         ret:list[JSONMessagePart] = []
