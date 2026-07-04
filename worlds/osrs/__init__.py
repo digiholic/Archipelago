@@ -104,7 +104,7 @@ class OSRSWorld(World):
         starting_area = self.options.starting_area
 
         #UT specific override, if we are in normal gen, resolve starting area, we will get it from slot_data in UT
-        if not hasattr(self.multiworld, "generation_is_fake"):
+        if not getattr(self.multiworld, "generation_is_fake", False):
             if starting_area.value == StartingArea.option_any_bank:
                 self.starting_area_item = rnd.choice(list(starting_area_dict.values()))
             elif starting_area.value == StartingArea.option_no_bank:
@@ -234,7 +234,7 @@ class OSRSWorld(World):
         return True
 
     def roll_locations(self):
-        generation_is_fake = hasattr(self.multiworld, "generation_is_fake")  # UT specific override
+        generation_is_fake = getattr(self.multiworld, "generation_is_fake", False)  # UT specific override
         locations_required = 0
         for item_row in item_rows:
             if item_row.name == self.starting_area_item:
@@ -594,7 +594,7 @@ class OSRSWorld(World):
                 self.set_rule(self.get_location(f"Bingo: Column {index+1}"),And(*col_rules))
             self.set_rule(self.get_location("Bingo: Forward Diagonal"), And(*for_rules))
             self.set_rule(self.get_location("Bingo: Reverse Diagonal"), And(*bak_rules))
-            if hasattr(self.multiworld,"generation_is_fake"):
+            if getattr(self.multiworld,"generation_is_fake", False):
                 #Make some entrances for the bingo board map tab, these are all useless logically but their ability to be transversed will still be important
                 menu_region = self.get_region("Menu") #they're all just going to connect menu to itself
                 for index in range(self.options.bingo_size.value):
