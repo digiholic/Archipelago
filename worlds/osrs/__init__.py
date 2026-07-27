@@ -511,6 +511,8 @@ class OSRSWorld(World):
         for location_name, location in self.location_name_to_data.items():
             rule_list:list[Rule] = []
             location_row = self.location_rows_by_name[location_name]
+            # Since we might have multiple copies of a single item, we need to keep track of which ones were added
+            added_items:list[str] = []
             # Set up requirements for region
             for region_required_name in location_row.regions:
                 region_required = self.region_name_to_data[region_required_name]
@@ -518,7 +520,10 @@ class OSRSWorld(World):
             for skill_req in location_row.skills:
                 rule_list.append(get_skill_rule(skill_req.skill, skill_req.level, self.options))
             for item_req in location_row.items:
-                rule_list.append(Has(item_req))
+                if item_req in added_items:
+                    continue
+                rule_list.append(Has(item_req, location_row.items.count(item_req)))
+                added_items.append(item_req)
             if location_row.qp:
                 rule_list.append(Has("Quest Point", location_row.qp))
             if rule_list:

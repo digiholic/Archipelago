@@ -126,7 +126,7 @@ class ItemNames(str, Enum):
     QP_Corsair_Curse = "2 QP (The Corsair Curse)"
     QP_X_Marks_the_Spot = "1 QP (X Marks The Spot)"
     QP_Below_Ice_Mountain = "1 QP (Below Ice Mountain)"
-
+    QP_Ides_of_Milk = "1 QP (Ides of Milk)"
     __str__ = str.__str__
 
 
@@ -152,6 +152,7 @@ class LocationNames(str, Enum):
     Q_Corsair_Curse = "Quest: The Corsair Curse"
     Q_X_Marks_the_Spot = "Quest: X Marks the Spot"
     Q_Below_Ice_Mountain = "Quest: Below Ice Mountain"
+    Q_Ides_of_Milk = "Quest: Ides of Milk"
     QP_Cooks_Assistant = "Points: Cook's Assistant"
     QP_Demon_Slayer = "Points: Demon Slayer"
     QP_Restless_Ghost = "Points: The Restless Ghost"
@@ -173,6 +174,7 @@ class LocationNames(str, Enum):
     QP_Corsair_Curse = "Points: The Corsair Curse"
     QP_X_Marks_the_Spot = "Points: X Marks the Spot"
     QP_Below_Ice_Mountain = "Points: Below Ice Mountain"
+    QP_Ides_of_Milk = "Points: Ides of Milk"
     Guppy = "Prepare a Guppy"
     Cavefish = "Prepare a Cavefish"
     Tetra = "Prepare a Tetra"
