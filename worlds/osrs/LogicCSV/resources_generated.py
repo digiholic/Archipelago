@@ -60,4 +60,5 @@ resource_rows = [
 	ResourceRow('Haystack'),
 	ResourceRow('Red Spider Eggs'),
 	ResourceRow('Stray Dog'),
+	ResourceRow('Plank'),
 ]
