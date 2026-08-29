@@ -122,6 +122,8 @@ class OSRSWorld(World):
                 self.bingo_board.append([]) #make the blank rows, we'll put location names in them once we
         elif hasattr(self.multiworld,"re_gen_passthrough") and self.game in self.multiworld.re_gen_passthrough:
             re_gen_passthrough = self.multiworld.re_gen_passthrough[self.game] # UT passthrough
+            if re_gen_passthrough["data_csv_tag"] != data_csv_tag:
+                raise OptionError(f"Multiworld was generated with CSV tag {re_gen_passthrough['data_csv_tag']} please get that apworld version and try again")
             if "starting_area" in re_gen_passthrough:
                 self.starting_area_item = re_gen_passthrough["starting_area"]
             for task_type in task_types:
@@ -434,13 +436,13 @@ class OSRSWorld(World):
         if dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
             ret.append({"type":"text","text":"Bingo : Forward Diagonal : \n"})
             for i in range(max_index):
-                temp_str = self.bingo_board[i][i]
+                temp_str = self.bingo_board[i][(max_index-1)-i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
         elif dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
             ret.append({"type":"text","text":"Bingo : Reverse Diagonal : \n"})
             for i in range(max_index):
-                temp_str = self.bingo_board[i][(max_index-1)-i]
+                temp_str = self.bingo_board[i][i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
         elif dest_name.lower().startswith("r ") or dest_name.lower().startswith("row "):
@@ -582,10 +584,10 @@ class OSRSWorld(World):
             for index in range(self.options.bingo_size.value):
                 temp_loc = self.get_location(self.bingo_board[index][index])
                 assert temp_loc.parent_region
-                for_rules.append(CanReachLocation(temp_loc.name))
+                bak_rules.append(CanReachLocation(temp_loc.name))
                 temp_loc = self.get_location(self.bingo_board[index][max_index-index])
                 assert temp_loc.parent_region
-                bak_rules.append(CanReachLocation(temp_loc.name))
+                for_rules.append(CanReachLocation(temp_loc.name))
                 row_rules:list[Rule] = []
                 col_rules:list[Rule] = []
                 for j_index in range(self.options.bingo_size.value):
