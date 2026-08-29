@@ -104,7 +104,7 @@ class OSRSWorld(World):
         starting_area = self.options.starting_area
 
         #UT specific override, if we are in normal gen, resolve starting area, we will get it from slot_data in UT
-        if not hasattr(self.multiworld, "generation_is_fake"):
+        if not getattr(self.multiworld, "generation_is_fake", False):
             if starting_area.value == StartingArea.option_any_bank:
                 self.starting_area_item = rnd.choice(list(starting_area_dict.values()))
             elif starting_area.value == StartingArea.option_no_bank:
@@ -234,7 +234,7 @@ class OSRSWorld(World):
         return True
 
     def roll_locations(self):
-        generation_is_fake = hasattr(self.multiworld, "generation_is_fake")  # UT specific override
+        generation_is_fake = getattr(self.multiworld, "generation_is_fake", False)  # UT specific override
         locations_required = 0
         for item_row in item_rows:
             if item_row.name == self.starting_area_item:
@@ -427,23 +427,28 @@ class OSRSWorld(World):
                                        ItemNames.Progressive_Range_Armor, ItemNames.Progressive_Tools])
 
     def explain_rule(self, dest_name:str, state:CollectionState ):
-        if self.options.goal.value not in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]: return None
+        """
+        training [skill] [level] - get the explained rule for a given skill training
+        """
+        bingo = self.options.goal.value in [self.options.goal.option_bingo, self.options.goal.option_dragon_slayer_bingo]
         from NetUtils import JSONMessagePart
         ret:list[JSONMessagePart] = []
         max_index = self.options.bingo_size.value
-        if dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
+        if bingo and dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
             ret.append({"type":"text","text":"Bingo : Forward Diagonal : \n"})
             for i in range(max_index):
                 temp_str = self.bingo_board[i][i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
-        elif dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
+        elif bingo and dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
             ret.append({"type":"text","text":"Bingo : Reverse Diagonal : \n"})
             for i in range(max_index):
                 temp_str = self.bingo_board[i][(max_index-1)-i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
-        elif dest_name.lower().startswith("r ") or dest_name.lower().startswith("row "):
+        elif bingo and dest_name.lower().startswith("r ") or dest_name.lower().startswith("row ") or dest_name.lower().startswith("bingo: row "):
+            if dest_name.lower().startswith("bingo: "):
+                dest_name = dest_name[7:] #strip bingo prefix
             _,row = dest_name.split(" ",2)
             if not row.isdecimal():
                 return None
@@ -453,7 +458,9 @@ class OSRSWorld(World):
                 temp_str = self.bingo_board[row_i][i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
-        elif dest_name.lower().startswith("c ") or dest_name.lower().startswith("col ") or dest_name.lower().startswith("column "):
+        elif bingo and dest_name.lower().startswith("c ") or dest_name.lower().startswith("col ") or dest_name.lower().startswith("column ") or dest_name.lower().startswith("bingo: column "):
+            if dest_name.lower().startswith("bingo: "):
+                dest_name = dest_name[7:] #strip bingo prefix
             _,col = dest_name.split(" ",2)
             if not col.isdecimal():
                 return None
@@ -463,6 +470,17 @@ class OSRSWorld(World):
                 temp_str = self.bingo_board[i][col_i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
+        elif dest_name.lower().startswith("training"):
+            try:
+                _,skill,level = dest_name.lower().split(" ")
+            except ValueError:
+                return [{"type":"text","text":"format - training [skill] [level]"}]
+            if skill in task_types:
+                if str(level).isnumeric():
+                    level = int(level)
+                    ret.extend(get_skill_rule(skill,level,self.options).resolve(self).explain_json(state))
+                else:
+                    return [{"type":"text","text":"Level needs to be a number (or skill should be one word)"}]
         if ret:
             return ret
         else:
@@ -599,7 +617,7 @@ class OSRSWorld(World):
                 self.set_rule(self.get_location(f"Bingo: Column {index+1}"),And(*col_rules))
             self.set_rule(self.get_location("Bingo: Forward Diagonal"), And(*for_rules))
             self.set_rule(self.get_location("Bingo: Reverse Diagonal"), And(*bak_rules))
-            if hasattr(self.multiworld,"generation_is_fake"):
+            if getattr(self.multiworld,"generation_is_fake", False):
                 #Make some entrances for the bingo board map tab, these are all useless logically but their ability to be transversed will still be important
                 menu_region = self.get_region("Menu") #they're all just going to connect menu to itself
                 for index in range(self.options.bingo_size.value):
