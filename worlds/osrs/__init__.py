@@ -319,7 +319,10 @@ class OSRSWorld(World):
             max_amount_for_task_type = getattr(self.options, f"max_{task_type}_tasks")
             tasks_for_this_type = [task for task in self.locations_by_category[task_type]
                                    if self.task_within_skill_levels(task.skills)]
-            max_amount_for_task_type = min(max_amount_for_task_type, len(tasks_for_this_type))
+            if generation_is_fake:
+                max_amount_for_task_type = len(tasks_for_this_type)
+            else:
+                max_amount_for_task_type = min(max_amount_for_task_type, len(tasks_for_this_type))
             if not self.options.progressive_tasks:
                 rnd.shuffle(tasks_for_this_type)
             else:
