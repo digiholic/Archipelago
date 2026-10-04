@@ -535,7 +535,7 @@ class OSRSWorld(World):
                             "Imp_Catcher", "Prince_Ali_Rescue", "Dorics_Quest", "Black_Knights_Fortress",
                             "Witchs_Potion", "Knights_Sword", "Goblin_Diplomacy", "Pirates_Treasure",
                             "Rune_Mysteries", "Misthalin_Mystery", "Corsair_Curse", "X_Marks_the_Spot",
-                            "Below_Ice_Mountain"]
+                            "Below_Ice_Mountain", "Ides_of_Milk"]
 
         for quest_attr_name in quest_attr_names:
             qp_loc_name = getattr(LocationNames, f"QP_{quest_attr_name}")
