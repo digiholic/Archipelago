@@ -35,7 +35,8 @@ QP_Items: typing.List[str] = [
     ItemNames.QP_Misthalin_Mystery,
     ItemNames.QP_Corsair_Curse,
     ItemNames.QP_X_Marks_the_Spot,
-    ItemNames.QP_Below_Ice_Mountain
+    ItemNames.QP_Below_Ice_Mountain,
+    ItemNames.QP_Ides_of_Milk
 ]
 
 starting_area_dict: typing.Dict[int, str] = {

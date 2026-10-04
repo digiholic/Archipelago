@@ -153,10 +153,6 @@ class OSRSWorld(World):
             data[f"max_{task_type}_level"] = getattr(self.options,f"max_{task_type}_level").value
         return data
 
-    @staticmethod
-    def interpret_slot_data(slot_data: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-        return slot_data
-
     def create_regions(self) -> None:
         """
         called to place player's regions into the MultiWorld's regions list. If it's hard to separate, this can be done
@@ -323,7 +319,10 @@ class OSRSWorld(World):
             max_amount_for_task_type = getattr(self.options, f"max_{task_type}_tasks")
             tasks_for_this_type = [task for task in self.locations_by_category[task_type]
                                    if self.task_within_skill_levels(task.skills)]
-            max_amount_for_task_type = min(max_amount_for_task_type, len(tasks_for_this_type))
+            if generation_is_fake:
+                max_amount_for_task_type = len(tasks_for_this_type)
+            else:
+                max_amount_for_task_type = min(max_amount_for_task_type, len(tasks_for_this_type))
             if not self.options.progressive_tasks:
                 rnd.shuffle(tasks_for_this_type)
             else:
@@ -337,8 +336,8 @@ class OSRSWorld(World):
                 weights_per_task_type[task_type] = weight_for_this_type
 
         # Build a list of collections and weights in a matching order for rnd.choices later
-        all_tasks = []
-        all_weights = []
+        all_tasks:list[list[LocationRow]] = []
+        all_weights:list[int] = []
         for task_type in task_types:
             if task_type in tasks_per_task_type:
                 all_tasks.append(tasks_per_task_type[task_type])
@@ -434,14 +433,14 @@ class OSRSWorld(World):
         from NetUtils import JSONMessagePart
         ret:list[JSONMessagePart] = []
         max_index = self.options.bingo_size.value
-        if bingo and dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
-            ret.append({"type":"text","text":"Bingo : Forward Diagonal : \n"})
+        if bingo and dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
+            ret.append({"type":"text","text":"Bingo : Reverse Diagonal : \n"})
             for i in range(max_index):
                 temp_str = self.bingo_board[i][i]
                 temp_status = state.can_reach_location(temp_str,self.player)
                 ret.extend([{"type":"text","text":f"{temp_str}"},{"type":"color","text":f" ({str(temp_status)}) \n","color":"green" if temp_status else "red"}])
-        elif bingo and dest_name.lower() in ["\\","reverse","reverse diagonal", "bingo: reverse diagonal","backwards","backwards diagonal", "bingo: backwards diagonal"]:
-            ret.append({"type":"text","text":"Bingo : Reverse Diagonal : \n"})
+        elif bingo and dest_name.lower() in ["/","forward","forward diagonal", "bingo: forward diagonal"]:
+            ret.append({"type":"text","text":"Bingo : Forward Diagonal : \n"})
             for i in range(max_index):
                 temp_str = self.bingo_board[i][(max_index-1)-i]
                 temp_status = state.can_reach_location(temp_str,self.player)
@@ -529,6 +528,8 @@ class OSRSWorld(World):
         for location_name, location in self.location_name_to_data.items():
             rule_list:list[Rule] = []
             location_row = self.location_rows_by_name[location_name]
+            # Since we might have multiple copies of a single item, we need to keep track of which ones were added
+            added_items:list[str] = []
             # Set up requirements for region
             for region_required_name in location_row.regions:
                 region_required = self.region_name_to_data[region_required_name]
@@ -536,7 +537,10 @@ class OSRSWorld(World):
             for skill_req in location_row.skills:
                 rule_list.append(get_skill_rule(skill_req.skill, skill_req.level, self.options))
             for item_req in location_row.items:
-                rule_list.append(Has(item_req))
+                if item_req in added_items:
+                    continue
+                rule_list.append(Has(item_req, location_row.items.count(item_req)))
+                added_items.append(item_req)
             if location_row.qp:
                 rule_list.append(Has("Quest Point", location_row.qp))
             if rule_list:
@@ -549,7 +553,7 @@ class OSRSWorld(World):
                             "Imp_Catcher", "Prince_Ali_Rescue", "Dorics_Quest", "Black_Knights_Fortress",
                             "Witchs_Potion", "Knights_Sword", "Goblin_Diplomacy", "Pirates_Treasure",
                             "Rune_Mysteries", "Misthalin_Mystery", "Corsair_Curse", "X_Marks_the_Spot",
-                            "Below_Ice_Mountain"]
+                            "Below_Ice_Mountain", "Ides_of_Milk"]
 
         for quest_attr_name in quest_attr_names:
             qp_loc_name = getattr(LocationNames, f"QP_{quest_attr_name}")
@@ -595,10 +599,10 @@ class OSRSWorld(World):
             for index in range(self.options.bingo_size.value):
                 temp_loc = self.get_location(self.bingo_board[index][index])
                 assert temp_loc.parent_region
-                for_rules.append(CanReachLocation(temp_loc.name))
+                bak_rules.append(CanReachLocation(temp_loc.name))
                 temp_loc = self.get_location(self.bingo_board[index][max_index-index])
                 assert temp_loc.parent_region
-                bak_rules.append(CanReachLocation(temp_loc.name))
+                for_rules.append(CanReachLocation(temp_loc.name))
                 row_rules:list[Rule] = []
                 col_rules:list[Rule] = []
                 for j_index in range(self.options.bingo_size.value):
