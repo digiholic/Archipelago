@@ -336,8 +336,8 @@ class OSRSWorld(World):
                 weights_per_task_type[task_type] = weight_for_this_type
 
         # Build a list of collections and weights in a matching order for rnd.choices later
-        all_tasks = []
-        all_weights = []
+        all_tasks:list[list[LocationRow]] = []
+        all_weights:list[int] = []
         for task_type in task_types:
             if task_type in tasks_per_task_type:
                 all_tasks.append(tasks_per_task_type[task_type])
