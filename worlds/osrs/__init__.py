@@ -153,10 +153,6 @@ class OSRSWorld(World):
             data[f"max_{task_type}_level"] = getattr(self.options,f"max_{task_type}_level").value
         return data
 
-    @staticmethod
-    def interpret_slot_data(slot_data: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-        return slot_data
-
     def create_regions(self) -> None:
         """
         called to place player's regions into the MultiWorld's regions list. If it's hard to separate, this can be done
