@@ -122,6 +122,13 @@ class OSRSWorld(World):
                 self.bingo_board.append([]) #make the blank rows, we'll put location names in them once we
         elif hasattr(self.multiworld,"re_gen_passthrough") and self.game in self.multiworld.re_gen_passthrough:
             re_gen_passthrough = self.multiworld.re_gen_passthrough[self.game] # UT passthrough
+            if re_gen_passthrough["data_csv_tag"] != data_csv_tag:
+                try:
+                    #If it's there throw the TrackerException so UT yells at the player correctly
+                    from worlds.tracker import TrackerException as MetaOptionError
+                except:
+                    from Options import OptionError as MetaOptionError
+                raise MetaOptionError(f"Multiworld was generated with CSV tag {re_gen_passthrough['data_csv_tag']} please get that apworld version and try again")
             if "starting_area" in re_gen_passthrough:
                 self.starting_area_item = re_gen_passthrough["starting_area"]
             for task_type in task_types:
